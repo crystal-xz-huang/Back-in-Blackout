@@ -1,15 +1,12 @@
 package unsw.blackout;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import unsw.response.models.EntityInfoResponse;
-import unsw.response.models.FileInfoResponse;
 import unsw.utils.Angle;
-import unsw.blackout.device.*;
-import unsw.blackout.satellite.*;
+import static unsw.utils.MathsHelper.getDistance;
+import static unsw.utils.MathsHelper.isVisible;
 
 /**
  * The controller for the Blackout system.
@@ -18,8 +15,7 @@ import unsw.blackout.satellite.*;
  * signatures
  */
 public class BlackoutController {
-    private List<Device> devices = new ArrayList<>();
-    private List<Satellite> satellites = new ArrayList<>();
+    private BlackoutSystem system = new BlackoutSystem();
 
     /**
      * Add a new device to the list of devices.
@@ -28,7 +24,6 @@ public class BlackoutController {
      * @param position Angle relative to the x-axis
      */
     public void createDevice(String deviceId, String type, Angle position) {
-        // Create a new device based on the type and add it to the list of devices
         Device device = null;
 
         switch (type) {
@@ -44,7 +39,7 @@ public class BlackoutController {
         default:
             break;
         }
-        devices.add(device);
+        system.addEntity(device);
     }
 
     /**
@@ -53,8 +48,7 @@ public class BlackoutController {
      * @param deviceId
      */
     public void removeDevice(String deviceId) {
-        Device device = findDevice(deviceId);
-        devices.remove(device);
+        system.removeEntity(deviceId);
     }
 
     /**
@@ -79,7 +73,7 @@ public class BlackoutController {
         default:
             break;
         }
-        satellites.add(satellite);
+        system.addEntity(satellite);
     }
 
     /**
@@ -88,8 +82,7 @@ public class BlackoutController {
      * @param satelliteId
      */
     public void removeSatellite(String satelliteId) {
-        Satellite satellite = findSatellite(satelliteId);
-        satellites.remove(satellite);
+        system.removeEntity(satelliteId);
     }
 
     /**
@@ -97,7 +90,8 @@ public class BlackoutController {
      * @return List of device ids
      */
     public List<String> listDeviceIds() {
-        return devices.stream().map(Device::getDeviceId).toList();
+        return system.listEntityIds().stream().filter(id -> system.getEntity(id) instanceof Device)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -105,11 +99,8 @@ public class BlackoutController {
      * @return List of satellite ids
      */
     public List<String> listSatelliteIds() {
-        List<String> satelliteIds = new ArrayList<>();
-        for (Satellite satellite : satellites) {
-            satelliteIds.add(satellite.getSatelliteId());
-        }
-        return satelliteIds;
+        return system.listEntityIds().stream().filter(id -> system.getEntity(id) instanceof Satellite)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -119,16 +110,8 @@ public class BlackoutController {
      * @param content
      */
     public void addFileToDevice(String deviceId, String filename, String content) {
-        Device device = findDevice(deviceId);
-        device.addFile(new File(filename, content));
-    }
-
-    private Map<String, FileInfoResponse> getFileInfoResponses(List<File> files) {
-        Map<String, FileInfoResponse> fileInfoResponses = new HashMap<>();
-        for (File file : files) {
-            fileInfoResponses.put(file.getFilename(), file.getFileInfoResponse());
-        }
-        return fileInfoResponses;
+        SpaceEntity entity = system.getEntity(deviceId);
+        entity.addFile(new File(filename, content));
     }
 
     /**
@@ -137,17 +120,8 @@ public class BlackoutController {
      * @return EntityInfoResponse
      */
     public EntityInfoResponse getInfo(String id) {
-        EntityInfoResponse response = null;
-        Satellite satellite = findSatellite(id);
-        Device device = findDevice(id);
-        if (satellite != null) {
-            response = new EntityInfoResponse(satellite.getSatelliteId(), satellite.getPosition(),
-                    satellite.getHeight(), satellite.getType(), getFileInfoResponses(satellite.getFiles()));
-        } else if (device != null) {
-            response = new EntityInfoResponse(device.getDeviceId(), device.getPosition(), device.getHeight(),
-                    device.getType(), getFileInfoResponses(device.getFiles()));
-        }
-        return response;
+        SpaceEntity entity = system.getEntity(id);
+        return entity.getInfo();
     }
 
     /**
@@ -171,11 +145,14 @@ public class BlackoutController {
     /**
      * Returns a list of device and satellite ids that are within range of the specified device.
      * @param id
-     * @return List of device ids
+     * @return List of ids that are within range
      */
     public List<String> communicableEntitiesInRange(String id) {
-        // TODO: Task 2 b)
-        return new ArrayList<>();
+        SpaceEntity src = system.getEntity(id);
+        List<SpaceEntity> entities = system.listEntities();
+        List<SpaceEntity> relays = listRelaySatellites();
+        return entities.stream().filter(dest -> canCommunicate(src, dest, relays)).map(SpaceEntity::getId)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -187,6 +164,28 @@ public class BlackoutController {
      */
     public void sendFile(String fileName, String fromId, String toId) throws FileTransferException {
         // TODO: Task 2 c)
+        SpaceEntity fromEntity = system.getEntity(fromId);
+        SpaceEntity toEntity = system.getEntity(toId);
+        // Check if the file exists on fromId and has finished transferring
+        File fileToSend = null;
+        for (File file : fromEntity.getFiles()) {
+            if (file.getFilename().equals(fileName) && file.isTransferComplete()) {
+                fileToSend = file;
+                break;
+            }
+        }
+        if (fileToSend == null) {
+            throw new FileTransferException.VirtualFileNotFoundException(fileName);
+        }
+
+        // Check if file exists on toId or is currently downloading to the target
+        for (File file : toEntity.getFiles()) {
+            if (file.getFilename().equals(fileName)) {
+                throw new FileTransferException.VirtualFileAlreadyExistsException(fileName);
+            }
+        }
+
+        //
     }
 
     public void createDevice(String deviceId, String type, Angle position, boolean isMoving) {
@@ -200,30 +199,90 @@ public class BlackoutController {
     }
 
     /**
-     * Find a device by its ID.
-     * @param deviceId
-     * @return Device or null if not found
+     * Get a list of all entity ids that match the specified type.
+     * @param type
+     * @return List of entity ids
      */
-    private Device findDevice(String deviceId) {
-        for (Device device : devices) {
-            if (device.getDeviceId().equals(deviceId)) {
-                return device;
-            }
-        }
-        return null;
+    private List<SpaceEntity> listRelaySatellites() {
+        return system.listEntities().stream().filter(e -> e instanceof RelaySatellite).collect(Collectors.toList());
     }
 
     /**
-     * Find a satellite by its ID.
-     * @param satelliteId
-     * @return Satellite or null if not found
+     * Check if the destination entity is in range and visible to the source entity.
+     * @param src
+     * @param dest
+     * @return
      */
-    private Satellite findSatellite(String satelliteId) {
-        for (Satellite satellite : satellites) {
-            if (satellite.getSatelliteId().equals(satelliteId)) {
-                return satellite;
+    private boolean inRangeAndVisible(SpaceEntity src, SpaceEntity dest) {
+        double h1 = src.getHeight();
+        double h2 = dest.getHeight();
+        Angle p1 = src.getPosition();
+        Angle p2 = dest.getPosition();
+        if (src instanceof Satellite && dest instanceof Satellite) {
+            return getDistance(h1, p1, h2, p2) <= src.getRange() && isVisible(h1, p1, h2, p2);
+        } else if (src instanceof Satellite && dest instanceof Device) {
+            return getDistance(h1, p1, p2) <= src.getRange() && isVisible(h1, p1, p2);
+        } else if (src instanceof Device && dest instanceof Satellite) {
+            return getDistance(h2, p2, p1) <= src.getRange() && isVisible(h2, p2, p1);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Check if the source entity can communicate with the destination entity.
+     * Either:
+     * (1) src supports dest and dest is visible and in range of src, or
+     * (2) src supports dest and there is a path from src to dest through any number of relays.
+     * Note:
+     * (1) src and dest should not be the same entity
+     * (2) src and dest cannot be relay satellites
+     * @param src
+     * @param dest
+     * @param relays List of relay satellites
+     * @return
+     */
+    private boolean canCommunicate(SpaceEntity src, SpaceEntity dest, List<SpaceEntity> relays) {
+        if (src.equals(dest) || src instanceof RelaySatellite || dest instanceof RelaySatellite) {
+            return false;
+        } else if (src.supports(dest) && inRangeAndVisible(src, dest)) {
+            return true;
+        } else {
+            return hasRelayPath(src, dest, relays);
+        }
+
+    }
+
+    /**
+     * Check if there is a path from src to dest through any number of relays.
+     * For instance, src -> Relay1 -> Relay2 -> dest
+     * This requires that Relay1 is visible and in range of src,
+     * Relay2 is visible and in range of Relay1 and dest is visible and in range of Relay2.
+     * @param src
+     * @param dest
+     * @param relays
+     * @return true if there is a path, false otherwise
+     */
+    private boolean hasRelayPath(SpaceEntity src, SpaceEntity dest, List<SpaceEntity> relays) {
+        Queue<SpaceEntity> queue = new LinkedList<>();
+        Set<SpaceEntity> visited = new HashSet<>();
+
+        visited.add(src);
+        queue.add(src);
+
+        while (!queue.isEmpty()) {
+            SpaceEntity current = queue.poll();
+            if (current.equals(dest)) {
+                return true;
+            }
+
+            for (SpaceEntity relay : relays) {
+                if (!visited.contains(relay) && inRangeAndVisible(current, dest)) {
+                    visited.add(relay);
+                    queue.add(relay);
+                }
             }
         }
-        return null;
+        return false;
     }
 }

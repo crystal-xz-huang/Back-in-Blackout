@@ -1,4 +1,4 @@
-package unsw.blackout.device;
+package unsw.blackout;
 
 import unsw.utils.Angle;
 
