@@ -105,15 +105,34 @@ public class BlackoutSystem {
         return new ArrayList<>(entities.keySet());
     }
 
-    // /**
-    //  * Stimulate the Blackout system for the specified number of minutes
-    //  * This will include moving satellites around
-    //  * @param minutes
-    //  */
-    // public void simulate(int minutes) {
-    //     for (SpaceEntity entity : entities.values()) {
-    //     }
-    // }
+    /**
+     * Get the list of satellites
+     * @return
+     */
+    public List<Satellite> listSatellites() {
+        return listEntities().stream().filter(e -> e instanceof Satellite).map(e -> (Satellite) e)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get the list of devices
+     * @return
+     */
+    public List<Device> listDevices() {
+        return listEntities().stream().filter(e -> e instanceof Device).map(e -> (Device) e)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Simulate the Blackout system for 1 minute.
+     * This will include moving satellites around
+     * @param minutes
+     */
+    public void simulateSatellites() {
+        for (Satellite satellite : listSatellites()) {
+            satellite.orbit(1);
+        }
+    }
 
     /**
      * Check if the source entity can communicate with the destination entity.

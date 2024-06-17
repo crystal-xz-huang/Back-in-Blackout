@@ -130,6 +130,7 @@ public class BlackoutController {
      */
     public void simulate() {
         // TODO: Task 2a)
+        system.simulateSatellites();
     }
 
     /**

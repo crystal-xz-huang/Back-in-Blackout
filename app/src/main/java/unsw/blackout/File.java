@@ -12,7 +12,7 @@ public class File {
         this.filename = filename;
         this.content = content;
         this.size = content.length();
-        this.data = "";
+        this.data = content;
     }
 
     public boolean isTransferComplete() {
