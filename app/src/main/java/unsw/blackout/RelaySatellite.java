@@ -1,5 +1,6 @@
 package unsw.blackout;
 
+import unsw.blackout.files.File;
 import unsw.utils.Angle;
 import unsw.utils.MathsHelper;
 
@@ -76,6 +77,30 @@ public class RelaySatellite extends Satellite {
         }
 
         setPosition(newPosition);
+    }
+
+    @Override
+    public int getMaxStorage() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getMaxStorage'");
+    }
+
+    @Override
+    public int getMaxFiles() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getMaxFiles'");
+    }
+
+    @Override
+    public boolean hasStorageFor(File file) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'hasStorageFor'");
+    }
+
+    @Override
+    public int getAvailableStorage() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getAvailableStorage'");
     }
 
 }

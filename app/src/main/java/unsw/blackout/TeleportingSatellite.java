@@ -1,5 +1,6 @@
 package unsw.blackout;
 
+import unsw.blackout.files.File;
 import unsw.utils.Angle;
 import unsw.utils.MathsHelper;
 
@@ -67,6 +68,28 @@ public class TeleportingSatellite extends Satellite {
             return type.equals("HandheldDevice") || type.equals("LaptopDevice");
         }
         return false;
+    }
+
+    @Override
+    public int getMaxStorage() {
+        return 200;
+    }
+
+    @Override
+    public int getMaxFiles() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public boolean hasStorageFor(File file) {
+        int storedBytes = listFiles().stream().mapToInt(f -> f.getSize()).sum();
+        return storedBytes + file.getSize() <= getMaxStorage();
+    }
+
+    @Override
+    public int getAvailableStorage() {
+        int storedBytes = listFiles().stream().mapToInt(f -> f.getSize()).sum();
+        return getMaxStorage() - storedBytes;
     }
 
 }

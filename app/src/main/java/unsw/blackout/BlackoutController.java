@@ -3,6 +3,8 @@ package unsw.blackout;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import unsw.blackout.files.File;
+import unsw.blackout.files.FileTransferSystem;
 import unsw.response.models.EntityInfoResponse;
 import unsw.utils.Angle;
 import static unsw.utils.MathsHelper.getDistance;
@@ -16,6 +18,7 @@ import static unsw.utils.MathsHelper.isVisible;
  */
 public class BlackoutController {
     private BlackoutSystem system = new BlackoutSystem();
+    private FileTransferSystem transferSystem = new FileTransferSystem();
 
     /**
      * Add a new device to the list of devices.
@@ -130,7 +133,8 @@ public class BlackoutController {
      */
     public void simulate() {
         // TODO: Task 2a)
-        system.simulateSatellites();
+        system.simulate();
+        transferSystem.simulate();
     }
 
     /**
@@ -164,29 +168,10 @@ public class BlackoutController {
      * @throws FileTransferException
      */
     public void sendFile(String fileName, String fromId, String toId) throws FileTransferException {
-        // TODO: Task 2 c)
         SpaceEntity fromEntity = system.getEntity(fromId);
         SpaceEntity toEntity = system.getEntity(toId);
-        // Check if the file exists on fromId and has finished transferring
-        File fileToSend = null;
-        for (File file : fromEntity.getFiles()) {
-            if (file.getFilename().equals(fileName) && file.isTransferComplete()) {
-                fileToSend = file;
-                break;
-            }
-        }
-        if (fileToSend == null) {
-            throw new FileTransferException.VirtualFileNotFoundException(fileName);
-        }
+        transferSystem.initiateTransfer(fileName, fromEntity, toEntity);
 
-        // Check if file exists on toId or is currently downloading to the target
-        for (File file : toEntity.getFiles()) {
-            if (file.getFilename().equals(fileName)) {
-                throw new FileTransferException.VirtualFileAlreadyExistsException(fileName);
-            }
-        }
-
-        //
     }
 
     public void createDevice(String deviceId, String type, Angle position, boolean isMoving) {

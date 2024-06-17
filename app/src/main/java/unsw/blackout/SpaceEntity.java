@@ -2,6 +2,7 @@ package unsw.blackout;
 
 import java.util.*;
 import unsw.utils.Angle;
+import unsw.blackout.files.File;
 import unsw.response.models.EntityInfoResponse;
 import unsw.response.models.FileInfoResponse;
 
@@ -46,10 +47,6 @@ public abstract class SpaceEntity {
         return height;
     }
 
-    public List<File> getFiles() {
-        return files;
-    }
-
     public double getRange() {
         return range;
     }
@@ -62,20 +59,22 @@ public abstract class SpaceEntity {
         files.add(file);
     }
 
-    public abstract boolean supports(SpaceEntity dest);
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (obj == this) {
-            return true;
-        }
-        if (obj.getClass() != getClass()) {
-            return false;
-        }
-        SpaceEntity other = (SpaceEntity) obj;
-        return id.equals(other.id);
+    public void removeFile(String fileName) {
+        files.removeIf(file -> file.getFilename().equals(fileName));
     }
+
+    public List<File> listFiles() {
+        return files;
+    }
+
+    public File getFile(String fileName) {
+        for (File file : files) {
+            if (file.getFilename().equals(fileName)) {
+                return file;
+            }
+        }
+        return null;
+    }
+
+    public abstract boolean supports(SpaceEntity dest);
 }
