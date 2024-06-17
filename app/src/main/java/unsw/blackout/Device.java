@@ -23,4 +23,23 @@ public abstract class Device extends SpaceEntity {
         return true;
     }
 
+    @Override
+    public int getReceiveBandwidth() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public int getSendBandwidth() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public int getMaxFiles() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public int getMaxStorage() {
+        return Integer.MAX_VALUE;
+    }
 }

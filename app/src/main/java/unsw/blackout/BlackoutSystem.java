@@ -3,53 +3,15 @@ package unsw.blackout;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import unsw.utils.Angle;
-import static unsw.utils.MathsHelper.getDistance;
-import static unsw.utils.MathsHelper.isVisible;
-
-public class BlackoutSystem {
-    private Map<String, SpaceEntity> entities;
+public class BlackoutSystem extends SpaceSystem {
+    private FileSystem fileSystem;
 
     public BlackoutSystem() {
-        this.entities = new HashMap<>();
+        super();
+        fileSystem = new FileSystem();
     }
 
-    public void addEntity(SpaceEntity entity) {
-        entities.put(entity.getId(), entity);
-    }
-
-    public void removeEntity(String entityId) {
-        entities.remove(entityId);
-    }
-
-    public SpaceEntity getEntity(String entityId) {
-        return entities.get(entityId);
-    }
-
-    public List<SpaceEntity> listEntities() {
-        return new ArrayList<>(entities.values());
-    }
-
-    public List<String> listEntityIds() {
-        return new ArrayList<>(entities.keySet());
-    }
-
-    public List<Satellite> listSatellites() {
-        return listEntities().stream().filter(e -> e instanceof Satellite).map(e -> (Satellite) e)
-                .collect(Collectors.toList());
-    }
-
-    public List<Device> listDevices() {
-        return listEntities().stream().filter(e -> e instanceof Device).map(e -> (Device) e)
-                .collect(Collectors.toList());
-    }
-
-    public void simulate() {
-        for (Satellite satellite : listSatellites()) {
-            satellite.orbit(1);
-        }
-    }
-
+    @Override
     public boolean canCommunicate(SpaceEntity src, SpaceEntity dest) {
         if (src.equals(dest) || src instanceof RelaySatellite || dest instanceof RelaySatellite) {
             return false;
@@ -60,19 +22,19 @@ public class BlackoutSystem {
         }
     }
 
-    private boolean inRangeAndVisible(SpaceEntity src, SpaceEntity dest) {
-        double h1 = src.getHeight();
-        double h2 = dest.getHeight();
-        Angle p1 = src.getPosition();
-        Angle p2 = dest.getPosition();
-        if (src instanceof Satellite && dest instanceof Satellite) {
-            return getDistance(h1, p1, h2, p2) <= src.getRange() && isVisible(h1, p1, h2, p2);
-        } else if (src instanceof Satellite && dest instanceof Device) {
-            return getDistance(h1, p1, p2) <= src.getRange() && isVisible(h1, p1, p2);
-        } else if (src instanceof Device && dest instanceof Satellite) {
-            return getDistance(h2, p2, p1) <= src.getRange() && isVisible(h2, p2, p1);
-        } else {
-            return false;
+    public void sendFile(String fileName, String fromId, String toId) throws FileTransferException {
+        SpaceEntity fromEntity = getEntity(fromId);
+        SpaceEntity toEntity = getEntity(toId);
+        fileSystem.sendFile(fromEntity, toEntity, fileName);
+    }
+
+    public void transferFiles() {
+        fileSystem.updateTransfers();
+    }
+
+    public void moveSatellites() {
+        for (Satellite satellite : listSatellites()) {
+            satellite.orbit();
         }
     }
 
@@ -99,6 +61,11 @@ public class BlackoutSystem {
             }
         }
         return false;
+    }
+
+    private List<Satellite> listSatellites() {
+        return listEntities().stream().filter(e -> e instanceof Satellite).map(e -> (Satellite) e)
+                .collect(Collectors.toList());
     }
 
     private List<SpaceEntity> listRelaySatellites() {

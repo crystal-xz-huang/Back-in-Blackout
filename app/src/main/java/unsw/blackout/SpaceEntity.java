@@ -2,7 +2,6 @@ package unsw.blackout;
 
 import java.util.*;
 import unsw.utils.Angle;
-import unsw.blackout.files.File;
 import unsw.response.models.EntityInfoResponse;
 import unsw.response.models.FileInfoResponse;
 
@@ -55,16 +54,18 @@ public abstract class SpaceEntity {
         this.position = position;
     }
 
-    public void addFile(File file) {
+    public void addFile(String filename, String content) {
+        File file = new File(filename, content);
+        files.add(file);
+    }
+
+    public void addFile(String filename, String content, int downloadedBytes) {
+        File file = new File(filename, content, downloadedBytes);
         files.add(file);
     }
 
     public void removeFile(String fileName) {
         files.removeIf(file -> file.getFilename().equals(fileName));
-    }
-
-    public List<File> listFiles() {
-        return files;
     }
 
     public File getFile(String fileName) {
@@ -76,5 +77,24 @@ public abstract class SpaceEntity {
         return null;
     }
 
+    public List<File> listFiles() {
+        return files;
+    }
+
+    public void startFileTransfer(String filename) {
+        File file = getFile(filename);
+        if (file != null) {
+            file.setTransferComplete(false);
+        }
+    }
+
     public abstract boolean supports(SpaceEntity dest);
+
+    public abstract int getSendBandwidth();
+
+    public abstract int getReceiveBandwidth();
+
+    public abstract int getMaxFiles();
+
+    public abstract int getMaxStorage();
 }

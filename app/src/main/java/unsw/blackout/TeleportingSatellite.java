@@ -1,6 +1,5 @@
 package unsw.blackout;
 
-import unsw.blackout.files.File;
 import unsw.utils.Angle;
 import unsw.utils.MathsHelper;
 
@@ -45,8 +44,8 @@ public class TeleportingSatellite extends Satellite {
     }
 
     @Override
-    public void orbit(double minutes) {
-        Angle newPosition = Orbit.getNewPosition(minutes, velocity, getHeight(), getPosition(), direction);
+    public void orbit() {
+        Angle newPosition = Orbit.getNewPosition(velocity, getHeight(), getPosition(), direction);
         // Teleport to 0 degrees if the satellite is at 180 degrees and change direction
         if (newPosition.toDegrees() >= 180) {
             setPosition(Angle.fromDegrees(0));
@@ -79,17 +78,4 @@ public class TeleportingSatellite extends Satellite {
     public int getMaxFiles() {
         return Integer.MAX_VALUE;
     }
-
-    @Override
-    public boolean hasStorageFor(File file) {
-        int storedBytes = listFiles().stream().mapToInt(f -> f.getSize()).sum();
-        return storedBytes + file.getSize() <= getMaxStorage();
-    }
-
-    @Override
-    public int getAvailableStorage() {
-        int storedBytes = listFiles().stream().mapToInt(f -> f.getSize()).sum();
-        return getMaxStorage() - storedBytes;
-    }
-
 }

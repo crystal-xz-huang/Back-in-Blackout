@@ -1,6 +1,5 @@
 package unsw.blackout;
 
-import unsw.blackout.files.File;
 import unsw.utils.Angle;
 import unsw.utils.MathsHelper;
 
@@ -56,7 +55,7 @@ public class RelaySatellite extends Satellite {
      * However, this correction is not applied immediately, but only after the next orbit.
      */
     @Override
-    public void orbit(double minutes) {
+    public void orbit() {
         // Check if the direction needs to be reversed
         if (reverseDirection) {
             if (getPosition().toDegrees() < 140) {
@@ -69,7 +68,7 @@ public class RelaySatellite extends Satellite {
             reverseDirection = false;
         }
 
-        Angle newPosition = Orbit.getNewPosition(minutes, getVelocity(), getHeight(), getPosition(), getDirection());
+        Angle newPosition = Orbit.getNewPosition(getVelocity(), getHeight(), getPosition(), getDirection());
 
         // Check if the satellite has reached the boundary
         if (newPosition.toDegrees() < 140 || newPosition.toDegrees() > 190) {
@@ -81,26 +80,12 @@ public class RelaySatellite extends Satellite {
 
     @Override
     public int getMaxStorage() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getMaxStorage'");
+        return Integer.MIN_VALUE;
     }
 
     @Override
     public int getMaxFiles() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getMaxFiles'");
-    }
-
-    @Override
-    public boolean hasStorageFor(File file) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'hasStorageFor'");
-    }
-
-    @Override
-    public int getAvailableStorage() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getAvailableStorage'");
+        return Integer.MIN_VALUE;
     }
 
 }

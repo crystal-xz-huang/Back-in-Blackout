@@ -13,8 +13,8 @@ public interface Orbit {
      * @param direction
      * @return new position of the orbit
      */
-    public static Angle getNewPosition(double minutes, double velocity, double height, Angle position, int direction) {
-        Angle displacement = Angle.fromRadians((velocity * minutes) / height);
+    public static Angle getNewPosition(double velocity, double height, Angle position, int direction) {
+        Angle displacement = Angle.fromRadians(velocity / height);
         Angle newPosition;
         if (direction == MathsHelper.CLOCKWISE) {
             newPosition = position.subtract(displacement);
@@ -25,11 +25,9 @@ public interface Orbit {
     }
 
     /**
-     * Orbit around Jupiter for the specified number of minutes
-     * Updates the postiion and direction of the entity after the orbit
-     * @param minutes
+     * Orbit around Jupiter for 1 minute
      */
-    public void orbit(double minutes);
+    public void orbit();
 
     public int getDirection();
 
