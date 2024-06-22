@@ -7,13 +7,13 @@ import static unsw.utils.MathsHelper.getDistance;
 import static unsw.utils.MathsHelper.isVisible;
 
 public abstract class SpaceSystem {
-    private Map<String, SpaceEntity> entities;
+    private Map<String, Entity> entities;
 
     public SpaceSystem() {
         this.entities = new HashMap<>();
     }
 
-    public void addEntity(SpaceEntity entity) {
+    public void addEntity(Entity entity) {
         entities.put(entity.getId(), entity);
     }
 
@@ -21,11 +21,11 @@ public abstract class SpaceSystem {
         entities.remove(entityId);
     }
 
-    public SpaceEntity getEntity(String entityId) {
+    public Entity getEntity(String entityId) {
         return entities.get(entityId);
     }
 
-    public List<SpaceEntity> listEntities() {
+    public List<Entity> listEntities() {
         return new ArrayList<>(entities.values());
     }
 
@@ -33,7 +33,7 @@ public abstract class SpaceSystem {
         return new ArrayList<>(entities.keySet());
     }
 
-    public boolean inRangeAndVisible(SpaceEntity src, SpaceEntity dest) {
+    public boolean inRangeAndVisible(Entity src, Entity dest) {
         double h1 = src.getHeight();
         double h2 = dest.getHeight();
         Angle p1 = src.getPosition();
@@ -49,5 +49,5 @@ public abstract class SpaceSystem {
         }
     }
 
-    public abstract boolean canCommunicate(SpaceEntity src, SpaceEntity dest);
+    public abstract boolean canCommunicate(Entity src, Entity dest);
 }

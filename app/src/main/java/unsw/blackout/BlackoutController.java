@@ -16,22 +16,19 @@ public class BlackoutController {
     private BlackoutSystem system = new BlackoutSystem();
 
     public void createDevice(String deviceId, String type, Angle position) {
-        Device device = null;
-
         switch (type) {
         case "HandheldDevice":
-            device = new HandheldDevice(deviceId, type, position);
+            system.addEntity(new HandheldDevice(deviceId, type, position));
             break;
         case "LaptopDevice":
-            device = new LaptopDevice(deviceId, type, position);
+            system.addEntity(new LaptopDevice(deviceId, type, position));
             break;
         case "DesktopDevice":
-            device = new DesktopDevice(deviceId, type, position);
+            system.addEntity(new DesktopDevice(deviceId, type, position));
             break;
         default:
             break;
         }
-        system.addEntity(device);
     }
 
     public void removeDevice(String deviceId) {
@@ -39,21 +36,19 @@ public class BlackoutController {
     }
 
     public void createSatellite(String satelliteId, String type, double height, Angle position) {
-        Satellite satellite = null;
         switch (type) {
         case "StandardSatellite":
-            satellite = new StandardSatellite(satelliteId, type, height, position);
+            system.addEntity(new StandardSatellite(satelliteId, type, height, position));
             break;
         case "TeleportingSatellite":
-            satellite = new TeleportingSatellite(satelliteId, type, height, position);
+            system.addEntity(new TeleportingSatellite(satelliteId, type, height, position));
             break;
         case "RelaySatellite":
-            satellite = new RelaySatellite(satelliteId, type, height, position);
+            system.addEntity(new RelaySatellite(satelliteId, type, height, position));
             break;
         default:
             break;
         }
-        system.addEntity(satellite);
     }
 
     public void removeSatellite(String satelliteId) {
@@ -71,12 +66,12 @@ public class BlackoutController {
     }
 
     public void addFileToDevice(String deviceId, String filename, String content) {
-        SpaceEntity entity = system.getEntity(deviceId);
-        entity.addFile(filename, content);
+        Entity entity = system.getEntity(deviceId);
+        entity.addFile(filename, content, true);
     }
 
     public EntityInfoResponse getInfo(String id) {
-        SpaceEntity entity = system.getEntity(id);
+        Entity entity = system.getEntity(id);
         return entity.getInfo();
     }
 
@@ -92,9 +87,9 @@ public class BlackoutController {
     }
 
     public List<String> communicableEntitiesInRange(String id) {
-        SpaceEntity src = system.getEntity(id);
-        List<SpaceEntity> entities = system.listEntities();
-        return entities.stream().filter(dest -> system.canCommunicate(src, dest)).map(SpaceEntity::getId)
+        Entity src = system.getEntity(id);
+        List<Entity> entities = system.listEntities();
+        return entities.stream().filter(dest -> system.canCommunicate(src, dest)).map(Entity::getId)
                 .collect(Collectors.toList());
     }
 

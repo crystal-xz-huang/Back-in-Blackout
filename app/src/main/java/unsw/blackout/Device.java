@@ -3,7 +3,7 @@ package unsw.blackout;
 import unsw.utils.Angle;
 import unsw.utils.MathsHelper;
 
-public abstract class Device extends SpaceEntity {
+public abstract class Device extends Entity {
     /**
      * Create a new device with the specified parameters
      * @param deviceId
@@ -15,8 +15,12 @@ public abstract class Device extends SpaceEntity {
         super(deviceId, type, position, MathsHelper.RADIUS_OF_JUPITER, range);
     }
 
+    /**
+     * Devices do not support communication with other devices (cannot send files to other devices)
+     * Devices however, can upload/download files to/from satellites
+     */
     @Override
-    public boolean supports(SpaceEntity dest) {
+    public boolean supports(Entity dest) {
         if (dest instanceof Device) {
             return false;
         }
@@ -24,8 +28,23 @@ public abstract class Device extends SpaceEntity {
     }
 
     @Override
-    public int getReceiveBandwidth() {
-        return Integer.MAX_VALUE;
+    public boolean hasReceiveBandwidth() {
+        return true;
+    }
+
+    @Override
+    public boolean hasSendBandwidth() {
+        return true;
+    }
+
+    @Override
+    public boolean maxStorageReached(int size) {
+        return false;
+    }
+
+    @Override
+    public boolean maxFilesReached() {
+        return false;
     }
 
     @Override
@@ -34,12 +53,7 @@ public abstract class Device extends SpaceEntity {
     }
 
     @Override
-    public int getMaxFiles() {
-        return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public int getMaxStorage() {
+    public int getReceiveBandwidth() {
         return Integer.MAX_VALUE;
     }
 }
