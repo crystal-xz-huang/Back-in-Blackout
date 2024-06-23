@@ -5,20 +5,15 @@ import unsw.response.models.FileInfoResponse;
 public class File {
     private String fileName;
     private String content; // content of the file
-    private String data; // currently transferred data
-    private int size; // total size of the complete file
-    private boolean isComplete; // whether the file has been completely transferred for this entity
+    private String data; // data that has been transferred
 
     public File(String fileName, String content, boolean isComplete) {
         this.fileName = fileName;
         this.content = content;
-        this.size = content.length();
         if (isComplete) {
             this.data = content;
-            this.isComplete = true;
         } else {
             this.data = "";
-            this.isComplete = false;
         }
     }
 
@@ -26,10 +21,12 @@ public class File {
         return fileName;
     }
 
+    // Total size of the complete file
     public int getSize() {
-        return size;
+        return content.length();
     }
 
+    // Final content of the file
     public String getContent() {
         return content;
     }
@@ -38,6 +35,7 @@ public class File {
         this.content = content;
     }
 
+    // Data that has been transferred
     public String getData() {
         return data;
     }
@@ -46,20 +44,39 @@ public class File {
         this.data = data;
     }
 
+    public void updateData(int progress) {
+        data = content.substring(0, progress);
+    }
+
+    // Whether the file has been completely transferred for this entity
+    // sender is always complete
     public boolean isComplete() {
-        return isComplete;
+        return data.equals(content);
     }
 
-    public void setComplete(boolean isComplete) {
-        this.isComplete = isComplete;
+    public void setComplete() {
+        this.data = content;
     }
 
+    public FileInfoResponse getInfo() {
+        return new FileInfoResponse(fileName, data, getSize(), isComplete());
+    }
+
+    /**
+     * Remove the remaining t bytes from the content
+     * and add the remaining data to the data
+     * @param progress - the number of bytes that have been transferred so far
+     */
+    public void removeRemainingTBytes(int progress) {
+        String remainingData = content.substring(progress);
+        remainingData = remainingData.replaceAll("t", "");
+        data += remainingData;
+    }
+
+    /**
+     * Remove the t bytes from the content
+     */
     public void removeTBytes() {
         content = content.replaceAll("t", "");
     }
-
-    public FileInfoResponse getFileInfoResponse() {
-        return new FileInfoResponse(fileName, data, size, isComplete);
-    }
-
 }

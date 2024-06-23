@@ -6,8 +6,8 @@ import unsw.utils.MathsHelper;
 public class StandardSatellite extends Satellite {
     private final double velocity = 2500;
     private final int direction = MathsHelper.CLOCKWISE;
-    private final int sendBandwith = 1;
-    private final int receiveBandwith = 1;
+    private final int defaultSendBandwidth = 1;
+    private final int defaultReceiveBandwith = 1;
     private final int maxStorage = 80;
     private final int maxFiles = 3;
 
@@ -29,26 +29,27 @@ public class StandardSatellite extends Satellite {
     public void orbit() {
         Angle newPosition = Orbit.getNewPosition(velocity, getHeight(), getPosition(), direction);
         setPosition(newPosition);
+        System.out.println("Position: " + this.getPosition().toDegrees());
     }
 
     @Override
-    public int getSendBandwidth() {
-        return sendBandwith;
+    public int getDefaultSendBandwidth() {
+        return defaultSendBandwidth;
     }
 
     @Override
-    public int getReceiveBandwidth() {
-        return receiveBandwith;
+    public int getDefaultReceiveBandwidth() {
+        return defaultReceiveBandwith;
     }
 
     @Override
-    public boolean maxStorageReached(int size) {
-        return getStorageUsed() + size > maxStorage;
+    public int getStorageCapacity() {
+        return maxStorage;
     }
 
     @Override
-    public boolean maxFilesReached() {
-        return getNumFiles() >= maxFiles;
+    public int getFileCapacity() {
+        return maxFiles;
     }
 
 }

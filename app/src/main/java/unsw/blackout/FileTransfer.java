@@ -1,92 +1,60 @@
 package unsw.blackout;
 
 public class FileTransfer {
-    private String fileName;
-    private String content;
-    private int size;
+    private File fromFile;
+    private File toFile;
     private Entity from;
     private Entity to;
-    private int progress = 0;
+    private int progress;
+    private int size;
     private boolean isComplete = false;
     private boolean isCancelled = false;
 
-    private File fromFile;
-    private File toFile;
-
-    public FileTransfer(String fileName, String content, Entity from, Entity to) {
-        this.fileName = fileName;
-        this.content = content;
-        this.size = content.length();
+    public FileTransfer(File fromFile, File toFile, Entity from, Entity to) {
+        this.fromFile = fromFile;
+        this.toFile = toFile;
         this.from = from;
         this.to = to;
-        this.setTransfer();
-    }
-
-    private void setTransfer() {
-        from.setFileComplete(fileName, false);
-        to.addFile(fileName, content, false);
-        from.incrementOutgoingTransfers();
-        to.incrementIncomingTransfers();
-        fromFile = from.getFile(fileName);
-        toFile = to.getFile(fileName);
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public Entity getFrom() {
-        return from;
-    }
-
-    public Entity getTo() {
-        return to;
+        this.progress = 0;
+        this.size = fromFile.getSize();
     }
 
     public void updateProgress() {
-        int transferRate = Math.min(from.getSendingSpeed(), to.getReceivingSpeed());
-        progress += transferRate;
-        if (progress >= size) {
+        int transferRate = Math.min(from.getSendBandwidth(), to.getReceiveBandwidth());
+        if (progress + transferRate >= size) {
             complete();
         }
 
         if (isTeleportingTransfer()) {
-            if (to instanceof Device) {
-                toFile.removeTBytes();
+            if (from instanceof Device) {
+                // Remove all "t" letter bytes from the file CONTENT on the SENDER (Device)
+                fromFile.removeTBytes();
+                fromFile.setComplete();
                 cancel();
             } else {
-                String remainingData = fromFile.getContent().substring(progress);
-                remainingData = remainingData.replaceAll("t", "");
-                toFile.setData(toFile.getData() + remainingData);
+                // Remove all remaining "t" letter bytes to be downloaded from the file CONTENT on the RECEIVER
+                toFile.removeRemainingTBytes(progress);
+                toFile.setComplete();
                 progress = fromFile.getSize();
                 complete();
             }
         } else {
-            toFile.setData(toFile.getData() + fromFile.getContent().substring(progress - transferRate, progress));
+            progress += transferRate;
+            toFile.updateData(progress);
         }
-    }
-
-    public boolean isComplete() {
-        return isComplete;
-    }
-
-    public boolean isCancelled() {
-        return isCancelled;
     }
 
     public void complete() {
         from.decrementOutgoingTransfers();
         to.decrementIncomingTransfers();
-        from.removeFile(fileName);
-        toFile.setComplete(true);
+        toFile.setComplete();
         isComplete = true;
     }
 
     public void cancel() {
         from.decrementOutgoingTransfers();
         to.decrementIncomingTransfers();
-        to.removeFile(fileName);
-        fromFile.setComplete(true);
+        to.removeFile(toFile.getFileName());
         isCancelled = true;
     }
 
@@ -97,4 +65,25 @@ public class FileTransfer {
     public int getProgress() {
         return progress;
     }
+
+    public String getFileName() {
+        return fromFile.getFileName();
+    }
+
+    public Entity getFrom() {
+        return from;
+    }
+
+    public Entity getTo() {
+        return to;
+    }
+
+    public boolean isComplete() {
+        return isComplete;
+    }
+
+    public boolean isCancelled() {
+        return isCancelled;
+    }
+
 }

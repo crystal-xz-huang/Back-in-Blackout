@@ -82,6 +82,7 @@ public class BlackoutController {
 
     public void simulate(int numberOfMinutes) {
         for (int i = 0; i < numberOfMinutes; i++) {
+            System.out.println("Minute " + (i + 1));
             simulate();
         }
     }

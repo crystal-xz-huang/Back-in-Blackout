@@ -28,32 +28,22 @@ public abstract class Device extends Entity {
     }
 
     @Override
-    public boolean hasReceiveBandwidth() {
-        return true;
-    }
-
-    @Override
-    public boolean hasSendBandwidth() {
-        return true;
-    }
-
-    @Override
-    public boolean maxStorageReached(int size) {
-        return false;
-    }
-
-    @Override
-    public boolean maxFilesReached() {
-        return false;
-    }
-
-    @Override
     public int getSendBandwidth() {
         return Integer.MAX_VALUE;
     }
 
     @Override
     public int getReceiveBandwidth() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public int getStorageCapacity() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public int getFileCapacity() {
         return Integer.MAX_VALUE;
     }
 }

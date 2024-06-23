@@ -17,16 +17,22 @@ public class BlackoutSystem extends SpaceSystem {
         }
     }
 
+    public void addFile(String id, String fileName, String content) {
+        Entity entity = getEntity(id);
+        entity.addFile(fileName, content, true);
+    }
+
     public void sendFile(String fileName, String fromId, String toId) throws FileTransferException {
         transferExceptionChecks(fileName, fromId, toId);
 
         Entity from = getEntity(fromId);
         Entity to = getEntity(toId);
+        File fromFile = from.sendTransfer(fileName);
+        File toFile = to.receiveTransfer(fromFile);
 
-        if (canCommunicate(from, to)) {
-            FileTransfer transfer = new FileTransfer(fileName, from.getFileContent(fileName), from, to);
-            transfers.put(fileName, transfer);
-        }
+        FileTransfer transfer = new FileTransfer(fromFile, toFile, from, to);
+        transfers.put(fileName, transfer);
+
     }
 
     public void transferExceptionChecks(String fileName, String fromId, String toId) throws FileTransferException {
@@ -34,24 +40,21 @@ public class BlackoutSystem extends SpaceSystem {
         Entity to = getEntity(toId);
 
         // file does not exist or is incomplete
-        if (!from.hasFile(fileName) || !from.isFileComplete(fileName)) {
+        if (!from.canSendFile(fileName)) {
             throw new FileTransferException.VirtualFileNotFoundException(fileName);
         }
 
         // File already exists on toId or is currently downloading to the target device
-        if (to.hasFile(fileName)) {
+        if (!to.canReceiveFile(fileName)) {
             throw new FileTransferException.VirtualFileAlreadyExistsException(fileName);
         }
 
-        // Check if there is enough bandwidth to send the file
-        if (!from.hasSendBandwidth() || !from.hasReceiveBandwidth()) {
+        // Check if there is enough bandwidth to send and receive the file
+        if (!from.hasSendBandwidth() || !to.hasReceiveBandwidth()) {
             throw new FileTransferException.VirtualFileNoBandwidthException(fromId);
         }
 
-        if (!to.hasSendBandwidth() || !to.hasReceiveBandwidth()) {
-            throw new FileTransferException.VirtualFileNoBandwidthException(toId);
-        }
-
+        // Check if there is enough storage space on the target device
         if (to.maxFilesReached()) {
             throw new FileTransferException.VirtualFileNoStorageSpaceException("Max Files Reached");
         } else if (to.maxStorageReached(from.getFileSize(fileName))) {
@@ -60,32 +63,26 @@ public class BlackoutSystem extends SpaceSystem {
     }
 
     public void transferFiles() {
-        // Check if the entities can communicates
-        for (FileTransfer transfer : transfers.values()) {
-            Entity from = transfer.getFrom();
-            Entity to = transfer.getTo();
-            String fileName = transfer.getFileName();
-
-            if (!canCommunicate(from, to)) {
-                transfer.cancel();
-                transfers.remove(fileName);
-            }
-        }
-
-        // For each transfer, transfer the file
+        checkTransfers();
         for (FileTransfer transfer : transfers.values()) {
             transfer.updateProgress();
-            if (transfer.isComplete()) {
-                transfer.complete();
-                transfers.remove(transfer.getFileName());
-            } else if (transfer.isCancelled()) {
-                transfer.cancel();
+            if (transfer.isComplete() || transfer.isCancelled()) {
                 transfers.remove(transfer.getFileName());
             }
         }
     }
 
-    /************************************************************************* */
+    private void checkTransfers() {
+        for (FileTransfer transfer : transfers.values()) {
+            Entity from = transfer.getFrom();
+            Entity to = transfer.getTo();
+
+            if (!canCommunicate(from, to)) {
+                transfer.cancel();
+                transfers.remove(transfer.getFileName());
+            }
+        }
+    }
 
     public void moveSatellites() {
         for (Satellite satellite : listSatellites()) {

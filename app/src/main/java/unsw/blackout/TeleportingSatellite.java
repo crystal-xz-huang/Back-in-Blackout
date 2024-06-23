@@ -1,19 +1,24 @@
 package unsw.blackout;
 
 import unsw.utils.Angle;
-import unsw.utils.MathsHelper;
+import static unsw.utils.MathsHelper.CLOCKWISE;
+import static unsw.utils.MathsHelper.ANTI_CLOCKWISE;
 
 public class TeleportingSatellite extends Satellite {
     private final double velocity = 1000;
     private final double range = 200000;
-    private final int sendBandwidth = 10;
-    private final int receiveBandwidth = 15;
+    private final int defaultSendBandwidth = 10;
+    private final int defaultReceiveBandwith = 15;
     private final int maxStorage = 200;
-    private int direction = MathsHelper.ANTI_CLOCKWISE;
+    private int direction = ANTI_CLOCKWISE;
     private boolean teleported = false;
 
     public TeleportingSatellite(String satelliteId, String type, double height, Angle position) {
         super(satelliteId, type, height, position, 200000);
+    }
+
+    public boolean hasTeleported() {
+        return teleported;
     }
 
     @Override
@@ -37,20 +42,29 @@ public class TeleportingSatellite extends Satellite {
 
     @Override
     public void orbit() {
-        // If the satellite has teleported, reset the flag and do not move for the rest of the turn
-        if (teleported) {
+        Angle newPosition = Orbit.getNewPosition(velocity, getHeight(), getPosition(), direction);
+        double degrees = newPosition.toDegrees();
+
+        if (getPosition().toDegrees() == 180 && !teleported) {
+            setPosition(newPosition);
             teleported = false;
+            System.out.println("Position: " + this.getPosition().toDegrees());
+            return;
         }
 
-        Angle newPosition = Orbit.getNewPosition(velocity, getHeight(), getPosition(), direction);
-        // Teleport to 0 degrees if the satellite is at 180 degrees and change direction
-        if (newPosition.toDegrees() >= 180) {
+        if (direction == ANTI_CLOCKWISE && degrees >= 180 && getPosition().toDegrees() < 180) {
+            setPosition(Angle.fromDegrees(360));
+            setDirection(CLOCKWISE);
+            teleported = true;
+        } else if (direction == CLOCKWISE && degrees < 180) {
             setPosition(Angle.fromDegrees(0));
-            setDirection(MathsHelper.CLOCKWISE);
+            setDirection(ANTI_CLOCKWISE);
             teleported = true;
         } else {
             setPosition(newPosition);
         }
+
+        System.out.println("Position: " + this.getPosition().toDegrees());
     }
 
     @Override
@@ -64,27 +78,24 @@ public class TeleportingSatellite extends Satellite {
         return false;
     }
 
-    public boolean hasTeleported() {
-        return teleported;
+    @Override
+    public int getDefaultSendBandwidth() {
+        return defaultSendBandwidth;
     }
 
     @Override
-    public boolean maxStorageReached(int size) {
-        return getStorageUsed() + size > maxStorage;
+    public int getDefaultReceiveBandwidth() {
+        return defaultReceiveBandwith;
     }
 
     @Override
-    public boolean maxFilesReached() {
-        return false;
+    public int getStorageCapacity() {
+        return maxStorage;
     }
 
     @Override
-    public int getSendBandwidth() {
-        return sendBandwidth;
+    public int getFileCapacity() {
+        return Integer.MAX_VALUE;
     }
 
-    @Override
-    public int getReceiveBandwidth() {
-        return receiveBandwidth;
-    }
 }
