@@ -1,0 +1,14 @@
+package unsw.blackout;
+
+import unsw.utils.Angle;
+
+public abstract class Satellite extends Entity implements Orbit {
+    public Satellite(String id, String type, Angle position, double height, FileStorage files) {
+        super(id, type, position, height, files);
+    }
+
+    @Override
+    public boolean supports(Entity dest) {
+        return true;
+    }
+}
