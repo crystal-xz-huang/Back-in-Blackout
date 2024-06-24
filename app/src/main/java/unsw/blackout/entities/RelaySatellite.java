@@ -1,12 +1,10 @@
 package unsw.blackout.entities;
 
-import unsw.utils.Angle;
-import static unsw.utils.MathsHelper.CLOCKWISE;
-
 import unsw.blackout.Orbit;
 import unsw.blackout.files.FileStorage;
-
+import unsw.utils.Angle;
 import static unsw.utils.MathsHelper.ANTI_CLOCKWISE;
+import static unsw.utils.MathsHelper.CLOCKWISE;
 
 public class RelaySatellite extends Satellite {
     private final double range = 300000;
@@ -21,10 +19,6 @@ public class RelaySatellite extends Satellite {
         } else {
             this.direction = ANTI_CLOCKWISE;
         }
-    }
-
-    public void setDirection(int direction) {
-        this.direction = direction;
     }
 
     @Override
@@ -63,6 +57,10 @@ public class RelaySatellite extends Satellite {
         }
 
         this.setPosition(Angle.fromDegrees(degrees));
+    }
+
+    private void setDirection(int direction) {
+        this.direction = direction;
     }
 
 }

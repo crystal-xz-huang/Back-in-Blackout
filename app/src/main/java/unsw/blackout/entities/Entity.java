@@ -75,6 +75,14 @@ public abstract class Entity {
         return getReceiveBandwidth() / incomingFiles;
     }
 
+    public boolean hasSendBandwidth() {
+        return getSendingSpeed() > 0;
+    }
+
+    public boolean hasReceiveBandwidth() {
+        return getReceivingSpeed() > 0;
+    }
+
     public FileStorage getFiles() {
         return files;
     }
@@ -88,13 +96,4 @@ public abstract class Entity {
         File file = files.getFile(fileName);
         return file == null;
     }
-
-    public boolean hasSendBandwidth() {
-        return getSendingSpeed() > 0;
-    }
-
-    public boolean hasReceiveBandwidth() {
-        return getReceivingSpeed() > 0;
-    }
-
 }

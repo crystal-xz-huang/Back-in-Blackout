@@ -3,14 +3,14 @@ package unsw.blackout.entities;
 import unsw.blackout.Orbit;
 import unsw.blackout.files.FileStorage;
 import unsw.utils.Angle;
-import unsw.utils.MathsHelper;
+import static unsw.utils.MathsHelper.CLOCKWISE;
 
 public class StandardSatellite extends Satellite {
     private final double velocity = 2500;
     private final double range = 150000;
     private final int sendBandwidth = 1;
     private final int receiveBandwidth = 1;
-    private final int direction = MathsHelper.CLOCKWISE;
+    private final int direction = CLOCKWISE;
 
     public StandardSatellite(String id, String type, Angle position, double height) {
         super(id, type, position, height, new FileStorage(80, 3));

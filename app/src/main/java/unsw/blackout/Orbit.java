@@ -9,7 +9,7 @@ public interface Orbit {
      * @param angle
      * @return normalized angle
      */
-    public static Angle normalizeAngle(Angle angle) {
+    private static Angle normalizeAngle(Angle angle) {
         double degrees = angle.toDegrees();
         double normalizedDegrees = (degrees % 360 + 360) % 360;
         return Angle.fromDegrees(normalizedDegrees);

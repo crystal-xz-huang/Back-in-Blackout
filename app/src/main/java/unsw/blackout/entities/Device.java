@@ -9,10 +9,6 @@ public abstract class Device extends Entity {
         super(deviceId, type, position, MathsHelper.RADIUS_OF_JUPITER, files);
     }
 
-    /**
-     * Devices do not support communication with other devices (cannot send files to other devices)
-     * Devices however, can upload/download files to/from satellites
-     */
     @Override
     public boolean supports(Entity dest) {
         if (dest instanceof Device) {
@@ -29,5 +25,15 @@ public abstract class Device extends Entity {
     @Override
     public int getReceiveBandwidth() {
         return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public boolean hasSendBandwidth() {
+        return true;
+    }
+
+    @Override
+    public boolean hasReceiveBandwidth() {
+        return true;
     }
 }

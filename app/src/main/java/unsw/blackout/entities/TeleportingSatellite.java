@@ -1,12 +1,10 @@
 package unsw.blackout.entities;
 
-import unsw.utils.Angle;
-import static unsw.utils.MathsHelper.CLOCKWISE;
-
 import unsw.blackout.Orbit;
 import unsw.blackout.files.FileStorage;
-
+import unsw.utils.Angle;
 import static unsw.utils.MathsHelper.ANTI_CLOCKWISE;
+import static unsw.utils.MathsHelper.CLOCKWISE;
 
 public class TeleportingSatellite extends Satellite {
     private final double velocity = 1000;
@@ -24,7 +22,7 @@ public class TeleportingSatellite extends Satellite {
         return teleported;
     }
 
-    public void setDirection(int direction) {
+    private void setDirection(int direction) {
         this.direction = direction;
     }
 
