@@ -114,14 +114,14 @@ public abstract class Entity {
     }
 
     public File sendTransfer(String fileName) {
-        incomingFiles++;
+        incrementOutgoingTransfers();
         return files.get(fileName);
     }
 
     public File receiveTransfer(File file) {
         File newFile = new File(file.getFileName(), file.getContent(), false);
         files.put(file.getFileName(), newFile);
-        outgoingFiles++;
+        incrementIncomingTransfers();
         return newFile;
     }
 

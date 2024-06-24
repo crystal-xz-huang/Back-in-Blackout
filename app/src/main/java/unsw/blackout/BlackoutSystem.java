@@ -4,22 +4,19 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class BlackoutSystem extends SpaceSystem {
-    private Map<String, FileTransfer> transfers = new HashMap<>();
+    private List<FileTransfer> transfers = new ArrayList<>();
 
     @Override
     public boolean canCommunicate(Entity src, Entity dest) {
-        if (src.equals(dest) || src instanceof RelaySatellite || dest instanceof RelaySatellite) {
+        if (src.equals(dest)) {
             return false;
         } else if (src.supports(dest) && inRangeAndVisible(src, dest)) {
             return true;
+        } else if (src instanceof RelaySatellite || dest instanceof RelaySatellite) {
+            return false;
         } else {
             return hasRelayPath(src, dest);
         }
-    }
-
-    public void addFile(String id, String fileName, String content) {
-        Entity entity = getEntity(id);
-        entity.addFile(fileName, content, true);
     }
 
     public void sendFile(String fileName, String fromId, String toId) throws FileTransferException {
@@ -31,11 +28,28 @@ public class BlackoutSystem extends SpaceSystem {
         File toFile = to.receiveTransfer(fromFile);
 
         FileTransfer transfer = new FileTransfer(fromFile, toFile, from, to);
-        transfers.put(fileName, transfer);
-
+        transfers.add(transfer);
     }
 
-    public void transferExceptionChecks(String fileName, String fromId, String toId) throws FileTransferException {
+    public void transferFiles() {
+        for (FileTransfer transfer : transfers) {
+            Entity from = transfer.getFrom();
+            Entity to = transfer.getTo();
+            if (!canCommunicate(from, to) && !transfer.isTeleportingTransfer()) {
+                transfer.cancel();
+            }
+        }
+        transfers.forEach(t -> t.updateTransfer());
+        transfers.removeIf(t -> t.isComplete() || t.isCancelled());
+    }
+
+    public void moveSatellites() {
+        for (Satellite satellite : listSatellites()) {
+            satellite.orbit();
+        }
+    }
+
+    private void transferExceptionChecks(String fileName, String fromId, String toId) throws FileTransferException {
         Entity from = getEntity(fromId);
         Entity to = getEntity(toId);
 
@@ -62,37 +76,8 @@ public class BlackoutSystem extends SpaceSystem {
         }
     }
 
-    public void transferFiles() {
-        checkTransfers();
-        for (FileTransfer transfer : transfers.values()) {
-            transfer.updateProgress();
-            if (transfer.isComplete() || transfer.isCancelled()) {
-                transfers.remove(transfer.getFileName());
-            }
-        }
-    }
-
-    private void checkTransfers() {
-        for (FileTransfer transfer : transfers.values()) {
-            Entity from = transfer.getFrom();
-            Entity to = transfer.getTo();
-
-            if (!canCommunicate(from, to)) {
-                transfer.cancel();
-                transfers.remove(transfer.getFileName());
-            }
-        }
-    }
-
-    public void moveSatellites() {
-        for (Satellite satellite : listSatellites()) {
-            satellite.orbit();
-        }
-    }
-
     private boolean hasRelayPath(Entity src, Entity dest) {
         List<Entity> relays = listRelaySatellites();
-
         Queue<Entity> queue = new LinkedList<>();
         Set<Entity> visited = new HashSet<>();
 
@@ -106,10 +91,14 @@ public class BlackoutSystem extends SpaceSystem {
             }
 
             for (Entity relay : relays) {
-                if (!visited.contains(relay) && inRangeAndVisible(current, dest)) {
+                if (!visited.contains(relay) && inRangeAndVisible(current, relay)) {
                     visited.add(relay);
                     queue.add(relay);
                 }
+            }
+
+            if (inRangeAndVisible(current, dest)) {
+                return true;
             }
         }
         return false;

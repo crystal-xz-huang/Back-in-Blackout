@@ -1,8 +1,7 @@
 package blackout;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
+import java.util.Arrays;
 
 import unsw.blackout.BlackoutController;
 import unsw.blackout.FileTransferException;
@@ -13,14 +12,6 @@ import unsw.utils.Angle;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static unsw.utils.MathsHelper.RADIUS_OF_JUPITER;
-import static unsw.utils.MathsHelper.CLOCKWISE;
-import static unsw.utils.MathsHelper.ANTI_CLOCKWISE;
-
-import java.util.Arrays;
-
-import static blackout.TestHelpers.assertListAreEqualIgnoringOrder;
 
 public class MyTests {
     @Test
@@ -713,24 +704,232 @@ public class MyTests {
     }
 
     @Test
-    public void testFileTransferFromDeviceToTeleportingSatellite() {
-        /**
-         * Device -> Teleporting Satellite
-         * All "t" letter bytes are removed from the file
-         * CONTENT on the device + SIZE IS ADJUSTED AND FILE IS COMPLETE
-         */
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(1);
-        final String satelliteId = "Satellite";
-        final String satelliteType = "TeleportingSatellite";
-        final String deviceId = "Device";
-        final String deviceType = "LaptopDevice";
-
+    public void testOutOfRangeStandard() {
         BlackoutController controller = new BlackoutController();
-        controller.createSatellite(satelliteId, satelliteType, height, position);
-        controller.createDevice(deviceId, deviceType, Angle.fromDegrees(310));
 
-        String content = "This is a test file. All these t's will be removed because of the teleporting satellite.";
+        controller.createSatellite("Satellite", "StandardSatellite", 100000, Angle.fromDegrees(200));
+        controller.createDevice("DeviceA", "HandheldDevice", Angle.fromDegrees(200));
+
+        // create a message that is 35 bytes long
+        byte[] msg = new byte[35];
+        Arrays.fill(msg, (byte) 'a');
+        String content = new String(msg);
+        controller.addFileToDevice("DeviceA", "File", content);
+        assertDoesNotThrow(() -> controller.sendFile("File", "DeviceA", "Satellite"));
+
+        // takes a total 32 minutes for satellite to be out of range
+        controller.simulate(30);
+
+        // partially downloaded file should be removed from the satellite
+        assertEquals(null, controller.getInfo("Satellite").getFiles().get("File"));
+    }
+
+    @Test
+    public void testDeviceToTeleportingSatelliteTransfer() {
+        BlackoutController controller = new BlackoutController();
+
+        controller.createSatellite("Satellite", "TeleportingSatellite", 80011, Angle.fromDegrees(179));
+        controller.createDevice("DeviceA", "HandheldDevice", Angle.fromDegrees(207.1304));
+
+        String content = "This is a test file and after satellite teleports there should be no remaining T bytes left";
+        controller.addFileToDevice("DeviceA", "FileT", content);
+        assertDoesNotThrow(() -> controller.sendFile("FileT", "DeviceA", "Satellite"));
+        // expect file to be not fully downloaded on the satellite
+        assertEquals(new FileInfoResponse("FileT", "", content.length(), false),
+                controller.getInfo("Satellite").getFiles().get("FileT"));
+        // expect file to be fully downloaded on the device
+        assertEquals(new FileInfoResponse("FileT", content, content.length(), true),
+                controller.getInfo("DeviceA").getFiles().get("FileT"));
+
+        // after 1 min, teleporting satellite expected to have 15/91 bytes downloaded: "This is a test"
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileT", "This is a test ", content.length(), false),
+                controller.getInfo("Satellite").getFiles().get("FileT"));
+        // after 1 min, device expected to have complete file
+        assertEquals(new FileInfoResponse("FileT", content, content.length(), true),
+                controller.getInfo("DeviceA").getFiles().get("FileT"));
+
+        // after 2 mins, satellite teleports and the file is removed from the satellite
+        controller.simulate();
+        // after 2 mins, satellite teleports and the file is removed from the satellite
+        assertEquals(null, controller.getInfo("Satellite").getFiles().get("FileT"));
+        // all T bytes are removed from the file on the device, with 81/81 bytes downloaded
+        String expectedContent = "This is a es file and afer saellie elepors here should be no remaining T byes lef";
+        assertEquals(new FileInfoResponse("FileT", expectedContent, expectedContent.length(), true),
+                controller.getInfo("DeviceA").getFiles().get("FileT"));
+    }
+
+    @Test
+    public void testTeleportingSatelliteTransfer() {
+        BlackoutController controller = new BlackoutController();
+
+        // SatelliteA teleports to 360 after 2 mins
+        controller.createSatellite("SatelliteA", "TeleportingSatellite", 80011, Angle.fromDegrees(132));
+        controller.createDevice("DeviceA", "DesktopDevice", Angle.fromDegrees(120));
+
+        String content = "This is a test file and after satellite teleports there should be no remaining T bytes left";
+        int finalSize = content.length();
+        controller.addFileToDevice("DeviceA", "FileA", content);
+
+        // Send a file to SatelliteA
+        assertDoesNotThrow(() -> controller.sendFile("FileA", "DeviceA", "SatelliteA"));
+
+        // expect file to be not fully downloaded on the satellite
+        assertEquals(new FileInfoResponse("FileA", "", finalSize, false),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+
+        // expect file to be fully downloaded on the device
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("DeviceA").getFiles().get("FileA"));
+
+        // after 1 min, teleporting satellite expected to have 15/91 bytes downloaded: "This is a test"
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", "This is a test ", finalSize, false),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("DeviceA").getFiles().get("FileA"));
+
+        // after 2 mins, expect "This is a test file and after" with 30/91 bytes downloaded
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", "This is a test file and after ", finalSize, false),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("DeviceA").getFiles().get("FileA"));
+
+        // after 3 mins, expect "This is a test file and after satellite telep"
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", "This is a test file and after satellite telep", finalSize, false),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("DeviceA").getFiles().get("FileA"));
+
+        // after 5 minutes, expect file to be fully downloaded on the satellite
+        controller.simulate(5);
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("DeviceA").getFiles().get("FileA"));
+
+        // attempt to send file to device: VirtualFileAlreadyExistsException:FileA
+        assertThrows(FileTransferException.VirtualFileAlreadyExistsException.class,
+                () -> controller.sendFile("FileA", "SatelliteA", "DeviceA"));
+        assertThrows(FileTransferException.VirtualFileAlreadyExistsException.class,
+                () -> controller.sendFile("FileA", "DeviceA", "SatelliteA"));
+
+        // create a new SatelliteB that teleports to 0 after 2 mins
+        controller.createSatellite("SatelliteB", "TeleportingSatellite", 80011, Angle.fromDegrees(179));
+
+        // send the same file from SatelliteA to SatelliteB
+        assertDoesNotThrow(() -> controller.sendFile("FileA", "SatelliteA", "SatelliteB"));
+
+        // after 1 min, SatelliteB should have 5/91 bytes downloaded: "This "
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", "This is a ", finalSize, false),
+                controller.getInfo("SatelliteB").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+
+        // after 2 mins, SatelliteB teleports and remaining bytes are downloaded but all "t" bytes are removed
+        String newData = "This is a es file and afer saellie elepors here should be no remaining T byes lef";
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", newData, newData.length(), true),
+                controller.getInfo("SatelliteB").getFiles().get("FileA"));
+
+        // SatelliteA should have the same file
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+    }
+
+    @Test
+    public void testTeleportingSatelliteTransfers() {
+        BlackoutController controller = new BlackoutController();
+
+        // SatelliteA teleports to 360 after 2 mins
+        controller.createSatellite("SatelliteA", "TeleportingSatellite", 80011, Angle.fromDegrees(132));
+        controller.createDevice("DeviceA", "DesktopDevice", Angle.fromDegrees(120));
+
+        String content = "This is a test file and after satellite teleports there should be no remaining T bytes left";
+        int finalSize = content.length();
+        controller.addFileToDevice("DeviceA", "FileA", content);
+
+        // Send a file to SatelliteA
+        assertDoesNotThrow(() -> controller.sendFile("FileA", "DeviceA", "SatelliteA"));
+
+        // expect file to fully downloaded after 10 mins
+        controller.simulate(10);
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("DeviceA").getFiles().get("FileA"));
+
+        // create a new SatelliteB that teleports to 0 after 2 mins and another satellite that does not
+        controller.createSatellite("SatelliteB", "TeleportingSatellite", 80011, Angle.fromDegrees(179));
+        controller.createSatellite("SatelliteC", "TeleportingSatellite", 80011, Angle.fromDegrees(100));
+
+        assertDoesNotThrow(() -> controller.sendFile("FileA", "SatelliteA", "SatelliteB"));
+        assertDoesNotThrow(() -> controller.sendFile("FileA", "SatelliteA", "SatelliteC"));
+
+        // after 1 min, both have 5/91 bytes downloaded: "This "
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", "This ", finalSize, false),
+                controller.getInfo("SatelliteB").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", "This ", finalSize, false),
+                controller.getInfo("SatelliteC").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+
+        // after 2 mins, SatelliteB teleports and remaining bytes are downloaded but all "t" bytes are removed
+        controller.simulate();
+        String newData = "This is a es file and afer saellie elepors here should be no remaining T byes lef";
+        assertEquals(new FileInfoResponse("FileA", newData, newData.length(), true),
+                controller.getInfo("SatelliteB").getFiles().get("FileA"));
+
+        // SatelliteC does not teleport and has 15/91 bytes downloaded
+        assertEquals(new FileInfoResponse("FileA", "This is a test ", finalSize, false),
+                controller.getInfo("SatelliteC").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteA").getFiles().get("FileA"));
+
+        // after 3 mins, SatelliteC has 25/91 bytes downloaded
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", "This is a test file and a", finalSize, false),
+                controller.getInfo("SatelliteC").getFiles().get("FileA"));
+
+        // after 4 mins, SatelliteC has 35/91 bytes downloaded
+        controller.simulate();
+        newData = "This is a test file and after satel";
+        assertEquals(new FileInfoResponse("FileA", newData, finalSize, false),
+                controller.getInfo("SatelliteC").getFiles().get("FileA"));
+
+        // create a new SatelliteD that teleports after 2 mins
+        // create 3 relays so that SatelliteB can reach SatelliteD
+        controller.createSatellite("SatelliteD", "TeleportingSatellite", 80011, Angle.fromDegrees(179));
+        controller.createSatellite("RelayA", "RelaySatellite", 85852, Angle.fromDegrees(46.0927));
+        controller.createSatellite("RelayB", "RelaySatellite", 78949, Angle.fromDegrees(89.1854));
+        controller.createSatellite("RelayC", "RelaySatellite", 80849, Angle.fromDegrees(123.5484));
+
+        content = "This is a es file and afer saellie elepors here should be no remaining T byes lef";
+        finalSize = content.length();
+
+        assertThrows(FileTransferException.VirtualFileAlreadyExistsException.class,
+                () -> controller.sendFile("FileA", "SatelliteB", "SatelliteA"));
+        assertThrows(FileTransferException.VirtualFileAlreadyExistsException.class,
+                () -> controller.sendFile("FileA", "SatelliteB", "SatelliteC"));
+        assertDoesNotThrow(() -> controller.sendFile("FileA", "SatelliteB", "SatelliteD"));
+
+        // after 1 min, SatelliteD has 10/81 bytes downloaded
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", "This is a ", finalSize, false),
+                controller.getInfo("SatelliteD").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteB").getFiles().get("FileA"));
+
+        // after 2 mins, satelliteD teleports and remaining bytes are downloaded but all "t" bytes are removed
+        controller.simulate();
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteD").getFiles().get("FileA"));
+        assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
+                controller.getInfo("SatelliteB").getFiles().get("FileA"));
     }
 
 }

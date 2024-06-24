@@ -19,6 +19,10 @@ public class RelaySatellite extends Satellite {
         }
     }
 
+    public void setDirection(int direction) {
+        this.direction = direction;
+    }
+
     @Override
     public double getRange() {
         return this.range;
@@ -32,10 +36,6 @@ public class RelaySatellite extends Satellite {
     @Override
     public int getDirection() {
         return this.direction;
-    }
-
-    public void setDirection(int direction) {
-        this.direction = direction;
     }
 
     @Override

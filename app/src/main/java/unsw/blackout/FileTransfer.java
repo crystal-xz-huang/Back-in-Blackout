@@ -19,28 +19,37 @@ public class FileTransfer {
         this.size = fromFile.getSize();
     }
 
-    public void updateProgress() {
+    public void updateTransfer() {
+        if (isComplete || isCancelled) {
+            return;
+        }
+        if (isTeleportingTransfer()) {
+            updateTeleportingTransfer();
+        } else {
+            updateNormalTransfer();
+        }
+    }
+
+    private void updateNormalTransfer() {
         int transferRate = Math.min(from.getSendBandwidth(), to.getReceiveBandwidth());
-        if (progress + transferRate >= size) {
+        int progressIncrement = Math.min(transferRate, size - progress);
+        progress += progressIncrement;
+        if (progress == size) {
             complete();
         }
+        toFile.updateData(progress);
+    }
 
-        if (isTeleportingTransfer()) {
-            if (from instanceof Device) {
-                // Remove all "t" letter bytes from the file CONTENT on the SENDER (Device)
-                fromFile.removeTBytes();
-                fromFile.setComplete();
-                cancel();
-            } else {
-                // Remove all remaining "t" letter bytes to be downloaded from the file CONTENT on the RECEIVER
-                toFile.removeRemainingTBytes(progress);
-                toFile.setComplete();
-                progress = fromFile.getSize();
-                complete();
-            }
+    private void updateTeleportingTransfer() {
+        if (from instanceof Device) {
+            fromFile.removeTBytes();
+            fromFile.setComplete();
+            cancel();
         } else {
-            progress += transferRate;
-            toFile.updateData(progress);
+            toFile.removeRemainingTBytes(progress);
+            toFile.setComplete();
+            progress = fromFile.getSize();
+            complete();
         }
     }
 
@@ -58,12 +67,16 @@ public class FileTransfer {
         isCancelled = true;
     }
 
-    private boolean isTeleportingTransfer() {
-        return from instanceof TeleportingSatellite || to instanceof TeleportingSatellite;
-    }
-
-    public int getProgress() {
-        return progress;
+    public boolean isTeleportingTransfer() {
+        if (from instanceof TeleportingSatellite && to instanceof TeleportingSatellite) {
+            return ((TeleportingSatellite) from).hasTeleported() || ((TeleportingSatellite) to).hasTeleported();
+        } else if (from instanceof TeleportingSatellite) {
+            return ((TeleportingSatellite) from).hasTeleported();
+        } else if (to instanceof TeleportingSatellite) {
+            return ((TeleportingSatellite) to).hasTeleported();
+        } else {
+            return false;
+        }
     }
 
     public String getFileName() {
@@ -85,5 +98,4 @@ public class FileTransfer {
     public boolean isCancelled() {
         return isCancelled;
     }
-
 }

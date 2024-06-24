@@ -42,13 +42,14 @@ public class TeleportingSatellite extends Satellite {
 
     @Override
     public void orbit() {
+        teleported = false;
+
         Angle newPosition = Orbit.getNewPosition(velocity, getHeight(), getPosition(), direction);
         double degrees = newPosition.toDegrees();
 
         if (getPosition().toDegrees() == 180 && !teleported) {
             setPosition(newPosition);
             teleported = false;
-            System.out.println("Position: " + this.getPosition().toDegrees());
             return;
         }
 
@@ -63,8 +64,6 @@ public class TeleportingSatellite extends Satellite {
         } else {
             setPosition(newPosition);
         }
-
-        System.out.println("Position: " + this.getPosition().toDegrees());
     }
 
     @Override
