@@ -1,8 +1,9 @@
 package unsw.blackout;
 
 public class FileTransfer {
-    private File fromFile;
-    private File toFile;
+    private String fileName;
+    private FileStorage fromFiles;
+    private FileStorage toFiles;
     private Entity from;
     private Entity to;
     private int progress;
@@ -10,13 +11,21 @@ public class FileTransfer {
     private boolean isComplete = false;
     private boolean isCancelled = false;
 
-    public FileTransfer(File fromFile, File toFile, Entity from, Entity to) {
-        this.fromFile = fromFile;
-        this.toFile = toFile;
+    public FileTransfer(String fileName, FileStorage fromFiles, FileStorage toFiles, Entity from, Entity to) {
+        this.fileName = fileName;
+        this.fromFiles = fromFiles;
+        this.toFiles = toFiles;
         this.from = from;
         this.to = to;
         this.progress = 0;
-        this.size = fromFile.getSize();
+        this.size = fromFiles.getFileSize(fileName);
+    }
+
+    public void sendFile() {
+        File file = fromFiles.getFile(fileName);
+        fromFiles.incrementOutgoingFiles();
+        toFiles.addFile(fileName, file.getContent(), false);
+        toFiles.incrementIncomingFiles();
     }
 
     public void updateTransfer() {
@@ -31,39 +40,39 @@ public class FileTransfer {
     }
 
     private void updateNormalTransfer() {
-        int transferRate = Math.min(from.getSendBandwidth(), to.getReceiveBandwidth());
+        int transferRate = Math.min(from.getSendingSpeed(), to.getReceivingSpeed());
         int progressIncrement = Math.min(transferRate, size - progress);
         progress += progressIncrement;
         if (progress == size) {
             complete();
         }
-        toFile.updateData(progress);
+        toFiles.updateFileData(fileName, progress);
     }
 
     private void updateTeleportingTransfer() {
         if (from instanceof Device) {
-            fromFile.removeTBytes();
-            fromFile.setComplete();
+            fromFiles.removeTBytes(fileName);
+            fromFiles.setComplete(fileName);
             cancel();
         } else {
-            toFile.removeRemainingTBytes(progress);
-            toFile.setComplete();
-            progress = fromFile.getSize();
+            toFiles.removeRemainingTBytes(fileName, progress);
+            toFiles.setComplete(fileName);
+            progress = size;
             complete();
         }
     }
 
     public void complete() {
-        from.decrementOutgoingTransfers();
-        to.decrementIncomingTransfers();
-        toFile.setComplete();
+        fromFiles.decrementOutgoingFiles();
+        toFiles.decrementIncomingFiles();
+        toFiles.setComplete(fileName);
         isComplete = true;
     }
 
     public void cancel() {
-        from.decrementOutgoingTransfers();
-        to.decrementIncomingTransfers();
-        to.removeFile(toFile.getFileName());
+        fromFiles.decrementOutgoingFiles();
+        toFiles.decrementIncomingFiles();
+        toFiles.removeFile(fileName);
         isCancelled = true;
     }
 
@@ -77,10 +86,6 @@ public class FileTransfer {
         } else {
             return false;
         }
-    }
-
-    public String getFileName() {
-        return fromFile.getFileName();
     }
 
     public Entity getFrom() {

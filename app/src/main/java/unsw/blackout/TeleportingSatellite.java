@@ -7,18 +7,21 @@ import static unsw.utils.MathsHelper.ANTI_CLOCKWISE;
 public class TeleportingSatellite extends Satellite {
     private final double velocity = 1000;
     private final double range = 200000;
-    private final int defaultSendBandwidth = 10;
-    private final int defaultReceiveBandwith = 15;
-    private final int maxStorage = 200;
+    private final int sendBandwidth = 10;
+    private final int receiveBandwidth = 15;
     private int direction = ANTI_CLOCKWISE;
     private boolean teleported = false;
 
-    public TeleportingSatellite(String satelliteId, String type, double height, Angle position) {
-        super(satelliteId, type, height, position, 200000);
+    public TeleportingSatellite(String id, String type, Angle position, double height) {
+        super(id, type, position, height, new FileStorage(200));
     }
 
     public boolean hasTeleported() {
         return teleported;
+    }
+
+    public void setDirection(int direction) {
+        this.direction = direction;
     }
 
     @Override
@@ -36,8 +39,14 @@ public class TeleportingSatellite extends Satellite {
         return direction;
     }
 
-    public void setDirection(int direction) {
-        this.direction = direction;
+    @Override
+    public int getSendBandwidth() {
+        return sendBandwidth;
+    }
+
+    @Override
+    public int getReceiveBandwidth() {
+        return receiveBandwidth;
     }
 
     @Override
@@ -76,25 +85,4 @@ public class TeleportingSatellite extends Satellite {
         }
         return false;
     }
-
-    @Override
-    public int getDefaultSendBandwidth() {
-        return defaultSendBandwidth;
-    }
-
-    @Override
-    public int getDefaultReceiveBandwidth() {
-        return defaultReceiveBandwith;
-    }
-
-    @Override
-    public int getStorageCapacity() {
-        return maxStorage;
-    }
-
-    @Override
-    public int getFileCapacity() {
-        return Integer.MAX_VALUE;
-    }
-
 }

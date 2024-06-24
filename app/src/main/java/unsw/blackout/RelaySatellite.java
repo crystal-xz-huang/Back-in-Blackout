@@ -9,8 +9,8 @@ public class RelaySatellite extends Satellite {
     private final double velocity = 1500;
     private int direction;
 
-    public RelaySatellite(String satelliteId, String type, double height, Angle position) {
-        super(satelliteId, type, height, position, 300000);
+    public RelaySatellite(String id, String type, Angle position, double height) {
+        super(id, type, position, height, new FileStorage(0));
 
         if (position.toDegrees() >= 140 && position.toDegrees() < 345) {
             this.direction = CLOCKWISE;
@@ -39,46 +39,26 @@ public class RelaySatellite extends Satellite {
     }
 
     @Override
+    public int getSendBandwidth() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public int getReceiveBandwidth() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
     public void orbit() {
-        double position = this.getPosition().toDegrees();
-        double distance = Angle.fromRadians(velocity / getHeight()).toDegrees();
-
-        double newPosition = position;
-        if (direction == CLOCKWISE) {
-            newPosition -= distance;
-        } else {
-            newPosition += distance;
-        }
-
-        newPosition = (newPosition % 360 + 360) % 360;
-
-        if (newPosition >= 190 && newPosition < 345) {
+        Angle newPosition = Orbit.getNewPosition(velocity, getHeight(), getPosition(), direction);
+        double degrees = newPosition.toDegrees();
+        if (degrees >= 190 && degrees < 345) {
             this.setDirection(CLOCKWISE);
-        } else if (newPosition <= 140) {
+        } else if (degrees <= 140) {
             this.setDirection(ANTI_CLOCKWISE);
         }
 
-        this.setPosition(Angle.fromDegrees(newPosition));
-    }
-
-    @Override
-    public int getDefaultSendBandwidth() {
-        return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public int getDefaultReceiveBandwidth() {
-        return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public int getStorageCapacity() {
-        return 0;
-    }
-
-    @Override
-    public int getFileCapacity() {
-        return Integer.MAX_VALUE;
+        this.setPosition(Angle.fromDegrees(degrees));
     }
 
 }

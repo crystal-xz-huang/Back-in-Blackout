@@ -38,13 +38,13 @@ public class BlackoutController {
     public void createSatellite(String satelliteId, String type, double height, Angle position) {
         switch (type) {
         case "StandardSatellite":
-            system.addEntity(new StandardSatellite(satelliteId, type, height, position));
+            system.addEntity(new StandardSatellite(satelliteId, type, position, height));
             break;
         case "TeleportingSatellite":
-            system.addEntity(new TeleportingSatellite(satelliteId, type, height, position));
+            system.addEntity(new TeleportingSatellite(satelliteId, type, position, height));
             break;
         case "RelaySatellite":
-            system.addEntity(new RelaySatellite(satelliteId, type, height, position));
+            system.addEntity(new RelaySatellite(satelliteId, type, position, height));
             break;
         default:
             break;
@@ -66,8 +66,7 @@ public class BlackoutController {
     }
 
     public void addFileToDevice(String deviceId, String filename, String content) {
-        Entity entity = system.getEntity(deviceId);
-        entity.addFile(filename, content, true);
+        system.addFileToDevice(deviceId, filename, content);
     }
 
     public EntityInfoResponse getInfo(String id) {
