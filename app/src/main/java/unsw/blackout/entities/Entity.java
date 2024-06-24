@@ -1,7 +1,9 @@
-package unsw.blackout;
+package unsw.blackout.entities;
 
 import java.util.*;
 import unsw.utils.Angle;
+import unsw.blackout.files.File;
+import unsw.blackout.files.FileStorage;
 import unsw.response.models.EntityInfoResponse;
 import unsw.response.models.FileInfoResponse;
 

@@ -1,4 +1,4 @@
-package unsw.blackout;
+package unsw.blackout.files;
 
 import java.util.*;
 

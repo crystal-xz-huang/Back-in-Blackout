@@ -1,4 +1,8 @@
-package unsw.blackout;
+package unsw.blackout.files;
+
+import unsw.blackout.entities.Device;
+import unsw.blackout.entities.Entity;
+import unsw.blackout.entities.TeleportingSatellite;
 
 public class FileTransfer {
     private String fileName;

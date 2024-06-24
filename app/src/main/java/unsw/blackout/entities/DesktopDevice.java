@@ -1,5 +1,6 @@
-package unsw.blackout;
+package unsw.blackout.entities;
 
+import unsw.blackout.files.FileStorage;
 import unsw.utils.Angle;
 
 public class DesktopDevice extends Device {

@@ -1,5 +1,7 @@
-package unsw.blackout;
+package unsw.blackout.entities;
 
+import unsw.blackout.Orbit;
+import unsw.blackout.files.FileStorage;
 import unsw.utils.Angle;
 import unsw.utils.MathsHelper;
 

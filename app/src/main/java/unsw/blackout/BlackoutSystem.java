@@ -3,19 +3,22 @@ package unsw.blackout;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class BlackoutSystem extends Jupiter {
+import unsw.blackout.files.*;
+import unsw.blackout.entities.*;
+
+public class BlackoutSystem extends JupiterSystem {
     private List<FileTransfer> transfers = new ArrayList<>();
 
     @Override
-    public boolean canCommunicate(Entity src, Entity dest) {
-        if (src.equals(dest)) {
+    public boolean canCommunicate(Entity from, Entity to) {
+        if (from.equals(to)) {
             return false;
-        } else if (src.supports(dest) && inRangeAndVisible(src, dest)) {
+        } else if (from.supports(to) && inRangeAndVisible(from, to)) {
             return true;
-        } else if (src instanceof RelaySatellite || dest instanceof RelaySatellite) {
+        } else if (from instanceof RelaySatellite || to instanceof RelaySatellite) {
             return false;
         } else {
-            return hasRelayPath(src, dest);
+            return hasRelayPath(from, to);
         }
     }
 
@@ -81,17 +84,17 @@ public class BlackoutSystem extends Jupiter {
         }
     }
 
-    private boolean hasRelayPath(Entity src, Entity dest) {
+    private boolean hasRelayPath(Entity from, Entity to) {
         List<Entity> relays = listRelaySatellites();
         Queue<Entity> queue = new LinkedList<>();
         Set<Entity> visited = new HashSet<>();
 
-        visited.add(src);
-        queue.add(src);
+        visited.add(from);
+        queue.add(from);
 
         while (!queue.isEmpty()) {
             Entity current = queue.poll();
-            if (current.equals(dest)) {
+            if (current.equals(to)) {
                 return true;
             }
 
@@ -102,7 +105,7 @@ public class BlackoutSystem extends Jupiter {
                 }
             }
 
-            if (inRangeAndVisible(current, dest)) {
+            if (inRangeAndVisible(current, to)) {
                 return true;
             }
         }

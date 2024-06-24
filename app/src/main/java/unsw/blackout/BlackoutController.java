@@ -3,6 +3,7 @@ package unsw.blackout;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import unsw.blackout.entities.*;
 import unsw.response.models.EntityInfoResponse;
 import unsw.utils.Angle;
 

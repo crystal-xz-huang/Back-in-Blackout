@@ -1,4 +1,4 @@
-package unsw.blackout;
+package unsw.blackout.files;
 
 import unsw.response.models.FileInfoResponse;
 
