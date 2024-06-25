@@ -75,12 +75,14 @@ public abstract class Entity {
         return getReceiveBandwidth() / incomingFiles;
     }
 
+    // bandwidth is shared between all files being sent
     public boolean hasSendBandwidth() {
-        return getSendingSpeed() > 0;
+        return getSendBandwidth() / (files.getNumOutgoingFiles() + 1) >= 1;
     }
 
     public boolean hasReceiveBandwidth() {
-        return getReceivingSpeed() > 0;
+        return getReceiveBandwidth() / (files.getNumIncomingFiles() + 1) >= 1;
+
     }
 
     public FileStorage getFiles() {

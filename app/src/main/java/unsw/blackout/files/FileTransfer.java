@@ -107,4 +107,8 @@ public class FileTransfer {
     public boolean isCancelled() {
         return isCancelled;
     }
+
+    public int getBytesRemaining() {
+        return size - progress;
+    }
 }

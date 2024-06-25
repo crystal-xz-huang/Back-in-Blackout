@@ -8,10 +8,15 @@ import unsw.blackout.FileTransferException;
 import unsw.response.models.FileInfoResponse;
 import unsw.response.models.EntityInfoResponse;
 import unsw.utils.Angle;
+import unsw.utils.MathsHelper;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static blackout.TestHelpers.assertListAreEqualIgnoringOrder;
+
+import static unsw.utils.MathsHelper.RADIUS_OF_JUPITER;
 
 public class MyTests {
     @Test
@@ -841,7 +846,7 @@ public class MyTests {
     }
 
     @Test
-    public void testTeleportingSatelliteTransfers() {
+    public void testTeleportingSatelliteConcurrentTransfers() {
         BlackoutController controller = new BlackoutController();
 
         // SatelliteA teleports to 360 after 2 mins
@@ -930,6 +935,172 @@ public class MyTests {
                 controller.getInfo("SatelliteD").getFiles().get("FileA"));
         assertEquals(new FileInfoResponse("FileA", content, finalSize, true),
                 controller.getInfo("SatelliteB").getFiles().get("FileA"));
+    }
+
+    @Test
+    public void testStandardTransferExceptions() {
+        BlackoutController controller = new BlackoutController();
+        controller.createSatellite("SatelliteA", "StandardSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(320));
+        controller.createDevice("DeviceA", "HandheldDevice", Angle.fromDegrees(320));
+
+        // Check bandwidth Exception - Standard can only send or receive 1 byte
+        String msg = "Hey";
+        controller.addFileToDevice("DeviceA", "FileAlpha", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileAlpha", "DeviceA", "SatelliteA"));
+
+        controller.addFileToDevice("DeviceA", "FileBeta", msg);
+        assertThrows(FileTransferException.VirtualFileNoBandwidthException.class,
+                () -> controller.sendFile("FileBeta", "DeviceA", "SatelliteA"));
+
+        // Check storage exception - Standard can only hold 3 files
+        controller.simulate(msg.length());
+        assertDoesNotThrow(() -> controller.sendFile("FileBeta", "DeviceA", "SatelliteA"));
+
+        controller.simulate(msg.length());
+        controller.addFileToDevice("DeviceA", "FileGamma", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileGamma", "DeviceA", "SatelliteA"));
+
+        controller.simulate(msg.length());
+        controller.addFileToDevice("DeviceA", "FileDelta", msg);
+        assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                () -> controller.sendFile("FileDelta", "DeviceA", "SatelliteA"));
+
+        // Check storage exception - Standard can only hold 80 bytes
+        controller.createSatellite("SatelliteB", "StandardSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(320));
+
+        byte[] content = new byte[81];
+        Arrays.fill(content, (byte) 'a');
+        msg = new String(content);
+        controller.addFileToDevice("DeviceA", "FileEpsilon", msg);
+        assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                () -> controller.sendFile("FileEpsilon", "DeviceA", "SatelliteB"));
+
+    }
+
+    @Test
+    public void testTeleportingTransferExceptions() {
+        BlackoutController controller = new BlackoutController();
+        controller.createSatellite("SatelliteA", "TeleportingSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(359));
+        controller.createDevice("DeviceA", "HandheldDevice", Angle.fromDegrees(359));
+
+        // Check receiving bandwidth Exception - Teleporting can only receive 15 bytes
+        // If we have more than 15 files, the satellite will not be able to receive any more files
+        String msg = "Hi";
+        controller.addFileToDevice("DeviceA", "FileA", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileA", "DeviceA", "SatelliteA"));
+        for (int i = 0; i < 14; i++) {
+            final int index = i; // declare a final local variable inside the loop
+            controller.addFileToDevice("DeviceA", "File" + index, msg);
+            assertDoesNotThrow(() -> controller.sendFile("File" + index, "DeviceA", "SatelliteA"));
+        }
+        controller.addFileToDevice("DeviceA", "FileBeta", msg);
+        assertThrows(FileTransferException.VirtualFileNoBandwidthException.class,
+                () -> controller.sendFile("FileBeta", "DeviceA", "SatelliteA"));
+        controller.simulate(msg.length());
+
+        // Check sending bandwidth Exception - Teleporting can only send 10 bytes per minute (no more than 10 files)
+        controller.createDevice("DeviceB", "HandheldDevice", Angle.fromDegrees(359));
+        for (int i = 0; i < 10; i++) {
+            final int index = i; // declare a final local variable inside the loop
+            assertDoesNotThrow(() -> controller.sendFile("File" + index, "SatelliteA", "DeviceB"));
+        }
+        assertThrows(FileTransferException.VirtualFileNoBandwidthException.class,
+                () -> controller.sendFile("FileA", "SatelliteA", "DeviceB"));
+
+        // Check storage exception-Teleporting can store up to 200 bytes
+        controller.createSatellite("SatelliteB", "TeleportingSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(359));
+        Byte[] content = new Byte[200];
+        msg = content.toString();
+        controller.addFileToDevice("DeviceB", "FileEpsilon", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileEpsilon", "DeviceB", "SatelliteB"));
+        controller.addFileToDevice("DeviceB", "FileB", "1");
+        assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                () -> controller.sendFile("FileB", "DeviceB", "SatelliteB"));
+    }
+
+    @Test
+    public void testMultipleFilesAtOnce() {
+        BlackoutController controller = new BlackoutController();
+        // 10000 + RADIUS_OF_JUPITER = 10000 + 69911 = 79911
+        controller.createSatellite("Satellite1", "TeleportingSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(320));
+        controller.createDevice("DeviceC", "DesktopDevice", Angle.fromDegrees(320));
+
+        String msg = "Hey";
+        controller.addFileToDevice("DeviceC", "FileAlpha", msg);
+        controller.addFileToDevice("DeviceC", "FileBeta", msg);
+
+        assertDoesNotThrow(() -> controller.sendFile("FileAlpha", "DeviceC", "Satellite1"));
+        assertDoesNotThrow(() -> controller.sendFile("FileBeta", "DeviceC", "Satellite1"));
+
+        controller.simulate();
+
+        assertEquals(new FileInfoResponse("FileAlpha", msg, msg.length(), true),
+                controller.getInfo("Satellite1").getFiles().get("FileAlpha"));
+    }
+
+    @Test
+    public void testAroundTheWorld() {
+        BlackoutController controller = new BlackoutController();
+
+        controller.createSatellite("1", "StandardSatellite", 78880, Angle.fromDegrees(118));
+        controller.createSatellite("2", "RelaySatellite", 78783, Angle.fromDegrees(71));
+        controller.createSatellite("3", "RelaySatellite", 79204, Angle.fromDegrees(24));
+        controller.createSatellite("4", "RelaySatellite", 76868, Angle.fromDegrees(335));
+        controller.createSatellite("5", "RelaySatellite", 77307, Angle.fromDegrees(317));
+        controller.createSatellite("6", "RelaySatellite", 77961, Angle.fromDegrees(275));
+        controller.createSatellite("7", "RelaySatellite", 78762, Angle.fromDegrees(235));
+        controller.createSatellite("8", "RelaySatellite", 79726, Angle.fromDegrees(189));
+
+        controller.createDevice("Device", "HandheldDevice", Angle.fromDegrees(186));
+
+        String msg = "Hey";
+        controller.addFileToDevice("Device", "FileAlpha", msg);
+
+        assertListAreEqualIgnoringOrder(Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8"),
+                controller.communicableEntitiesInRange("Device"));
+    }
+
+    @Test
+    public void testInRangeExtendedByRelayIsNotSupported() {
+        BlackoutController controller = new BlackoutController();
+        controller.createSatellite("Satellite1", "RelaySatellite", 88568, Angle.fromDegrees(112));
+        controller.createSatellite("Satellite2", "StandardSatellite", 82871, Angle.fromDegrees(151));
+        controller.createDevice("Device1", "DesktopDevice", Angle.fromDegrees(80));
+
+        // Device1 is not in sight of Satellite2
+        assertTrue(!MathsHelper.isVisible(82871, Angle.fromDegrees(151), Angle.fromDegrees(80)));
+
+        // Device1 cannot communicate with Satellite2, as StandardSatellites cannot communicate with DesktopDevice
+        assertListAreEqualIgnoringOrder(Arrays.asList("Satellite1"), controller.communicableEntitiesInRange("Device1"));
+    }
+
+    @Test
+    public void testOutOfRange() {
+        BlackoutController controller = new BlackoutController();
+
+        controller.createSatellite("Satellite1", "StandardSatellite", 80000, Angle.fromDegrees(0));
+        controller.createDevice("Device1", "HandheldDevice", Angle.fromDegrees(30));
+
+        assertListAreEqualIgnoringOrder(Arrays.asList("Satellite1"), controller.communicableEntitiesInRange("Device1"));
+
+        // Creates a file and sends it to the satellite
+        String msg = "Hey";
+        controller.addFileToDevice("Device1", "FileAlpha", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileAlpha", "Device1", "Satellite1"));
+
+        controller.simulate();
+
+        // Satellite goes out of range
+        assertListAreEqualIgnoringOrder(java.util.Collections.emptyList(),
+                controller.communicableEntitiesInRange("Device1"));
+
+        // The file transfer is cancelled
+        assertTrue(controller.getInfo("Satellite1").getFiles().isEmpty());
     }
 
 }

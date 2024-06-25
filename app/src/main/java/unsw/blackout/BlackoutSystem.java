@@ -55,6 +55,7 @@ public class BlackoutSystem extends JupiterSystem {
         FileStorage toFiles = to.getFiles();
 
         FileTransfer transfer = new FileTransfer(fileName, fromFiles, toFiles, from, to);
+        System.out.println("Sending file: " + fileName + " from " + fromId + " to " + toId);
         transfers.add(transfer);
         transfer.sendFile();
     }
@@ -73,7 +74,7 @@ public class BlackoutSystem extends JupiterSystem {
             throw new FileTransferException.VirtualFileAlreadyExistsException(fileName);
         }
 
-        if (!from.hasSendBandwidth() || !to.hasReceiveBandwidth()) {
+        if (!to.hasReceiveBandwidth() || !from.hasSendBandwidth()) {
             throw new FileTransferException.VirtualFileNoBandwidthException(fromId);
         }
 
