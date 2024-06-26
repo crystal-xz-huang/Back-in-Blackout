@@ -26,14 +26,4 @@ public abstract class Device extends Entity {
     public int getReceiveBandwidth() {
         return Integer.MAX_VALUE;
     }
-
-    @Override
-    public boolean hasSendBandwidth() {
-        return true;
-    }
-
-    @Override
-    public boolean hasReceiveBandwidth() {
-        return true;
-    }
 }

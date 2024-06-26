@@ -1,708 +1,23 @@
 package blackout;
 
 import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 
 import unsw.blackout.BlackoutController;
 import unsw.blackout.FileTransferException;
 import unsw.response.models.FileInfoResponse;
-import unsw.response.models.EntityInfoResponse;
 import unsw.utils.Angle;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static blackout.TestHelpers.assertListAreEqualIgnoringOrder;
+
+import static unsw.utils.MathsHelper.RADIUS_OF_JUPITER;
 
 public class MyTests {
-    @Test
-    public void testStandardMovement() {
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(250);
-        final String id = "Standard";
-        final String type = "StandardSatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-        assertEquals(new EntityInfoResponse(id, position, height, type), controller.getInfo(id));
-
-        // After 1 minute: 247.954
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(247.954), height, type), controller.getInfo(id));
-
-        // After 11 minutes: 227.4944
-        controller.simulate(10);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(227.4944), height, type), controller.getInfo(id));
-
-        // After 21 minutes: 207.0348
-        controller.simulate(10);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(207.0348), height, type), controller.getInfo(id));
-
-        // After 24 minutes: 200.897
-        controller.simulate(3);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(200.897), height, type), controller.getInfo(id));
-
-        // After 84 minutes: 78.1396
-        controller.simulate(60);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(78.1396), height, type), controller.getInfo(id));
-
-        // After 144 minutes: 315.3822
-        controller.simulate(60);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(315.3822), height, type), controller.getInfo(id));
-
-        // After 204 minutes: 192.6249
-        controller.simulate(60);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(192.6249), height, type), controller.getInfo(id));
-
-        // After 324 minutes: 307.1101
-        controller.simulate(120);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(307.1101), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testRelayMovementAtThreshold() {
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(345);
-        final String id = "Relay1";
-        final String type = "RelaySatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-        assertEquals(new EntityInfoResponse(id, position, height, type), controller.getInfo(id));
-
-        // After 12 minutes: The satellite is just before crossing 360° boundary (359.7308°)
-        controller.simulate(12);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(359.7308), height, type), controller.getInfo(id));
-
-        // After 13 minutes: The satellite crosses the 360° boundary (0.9584°)
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0.9584), height, type), controller.getInfo(id));
-
-        // After 127 minutes: The satellite reaches 140° (140.9018°)
-        controller.simulate(114);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.9018), height, type), controller.getInfo(id));
-
-        // After 167 minutes: The satellite reaches 190° and reverses direction (190.0048°)
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.0048), height, type), controller.getInfo(id));
-
-        // After 168 minutes: The satellite reverses direction (188.7772°)
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(188.7772), height, type), controller.getInfo(id));
-
-        // After 207 minutes: The satellite is just before the 140° boundary (140.9018°)
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.9018), height, type), controller.getInfo(id));
-
-        // After 208 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.6742), height, type), controller.getInfo(id));
-
-        // After 209 minutes: The satellite is at 140.9018° and reverses direction
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.9018), height, type), controller.getInfo(id));
-
-        // After 210 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(142.1294), height, type), controller.getInfo(id));
-
-        // After 249 minutes: The satellite is crosses the 190° boundary (190.0048°) and reverses direction
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.0048), height, type), controller.getInfo(id));
-
-        // After 250 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(188.7772), height, type), controller.getInfo(id));
-
-        // After 290 minutes
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.6742), height, type), controller.getInfo(id));
-
-        // After 291 minutes: The satellite is crosses the 140° boundary and reverses direction
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.9018), height, type), controller.getInfo(id));
-
-        // After 292 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(142.1294), height, type), controller.getInfo(id));
-
-        // After 331 minutes
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.0048), height, type), controller.getInfo(id));
-
-        // After 332 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(188.7772), height, type), controller.getInfo(id));
-
-        // After 372 minutes
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.6742), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testRelayMovementBeforeLowerBound() {
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(139);
-        final String id = "Relay2";
-        final String type = "RelaySatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-        assertEquals(new EntityInfoResponse(id, position, height, type), controller.getInfo(id));
-        /**
-         * 1 m: 140.2275
-         * 41 m: 189.3305
-         * 42 m: 190.5581
-         * 43 m: 189.3305
-         * 44 m: 188.1029
-         * 45 m: 186.8753
-         * 83 m: 140.2275
-         * 84 m: 138.9999
-         * 85 m: 140.2275
-         * 86 m: 141.4551
-         * 125 m: 189.3305
-         * 126 m: 190.558
-         * 127 m: 189.3305
-         * 167 m: 140.2275
-         * 168 m: 138.9999
-         * 169 m: 140.2275
-         */
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.2275), height, type), controller.getInfo(id));
-
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189.3305), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.5581), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189.3305), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(188.1029), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(186.8753), height, type), controller.getInfo(id));
-
-        controller.simulate(38);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.2275), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(138.9999), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.2275), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(141.4551), height, type), controller.getInfo(id));
-
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189.3305), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.558), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189.3305), height, type), controller.getInfo(id));
-
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.2275), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(138.9999), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.2275), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testRelayMovementAfterLowerBound() {
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(141);
-        final String id = "Relay3";
-        final String type = "RelaySatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-        assertEquals(new EntityInfoResponse(id, position, height, type), controller.getInfo(id));
-        /**
-         * 1 m: 139.7724
-         * 41 m: 188.8753
-         * 42 m: 190.1029
-         * 43 m: 188.8753
-         * 82 m: 140.9999
-         * 83 m: 139.7724
-         * 84 m: 140.9999
-         * 123 m: 188.8753
-         * 124 m: 190.1029
-         * 125 m: 188.8753
-         */
-        System.out.println("Initial position: " + controller.getInfo(id));
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.7724), height, type), controller.getInfo(id));
-
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(188.8753), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.1029), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(188.8753), height, type), controller.getInfo(id));
-
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.9999), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.7724), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.9999), height, type), controller.getInfo(id));
-
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(188.8753), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.1029), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(188.8753), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testRelayMovementBeforeUpperBound() {
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(189);
-        final String id = "Relay4";
-        final String type = "RelaySatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-        assertEquals(new EntityInfoResponse(id, position, height, type), controller.getInfo(id));
-        /**
-         * 1 m: 187.7724
-         * 39 m: 141.1246
-         * 40 m: 139.897
-         * 41 m: 141.1246
-         * 80 m: 189
-         * 81 m: 190.2275
-         * 82 m: 189
-         * 121 m: 141.1246
-         * 122 m: 139.897
-         * 123 m: 141.1246
-         * 162 m: 189
-         * 163 m: 190.2275
-         * 164 m: 189
-         */
-        System.out.println("Initial position: " + controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(187.7724), height, type), controller.getInfo(id));
-
-        controller.simulate(38);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(141.1246), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.897), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(141.1246), height, type), controller.getInfo(id));
-
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.2275), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189), height, type), controller.getInfo(id));
-
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(141.1246), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.897), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(141.1246), height, type), controller.getInfo(id));
-
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(190.2275), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testRelayMovementAfterUpperBound() {
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(191);
-        final String id = "Relay5";
-        final String type = "RelaySatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-        assertEquals(new EntityInfoResponse(id, position, height, type), controller.getInfo(id));
-        /**
-         * 1 m: 189.7724
-         * 41 m: 140.6694
-         * 42 m: 139.4419
-         * 43 m: 140.6694
-         * 83 m: 189.7724
-         * 84 m: 191
-         * 85 m: 189.7724
-         * 125 m: 140.6694
-         * 126 m: 139.4419
-         * 127 m: 140.6694
-         */
-        System.out.println("Initial position: " + controller.getInfo(id));
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189.7724), height, type), controller.getInfo(id));
-
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.6694), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.4419), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.6694), height, type), controller.getInfo(id));
-
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189.7724), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(191), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(189.7724), height, type), controller.getInfo(id));
-
-        controller.simulate(40);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.6694), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(139.4419), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(140.6694), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testRelayMovementEdgeCases() {
-        final double height = 70011;
-        final Angle position1 = Angle.fromDegrees(1);
-        final Angle position2 = Angle.fromDegrees(359);
-        final String id1 = "Relay6";
-        final String id2 = "Relay7";
-        final String type = "RelaySatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id1, type, height, position1);
-        controller.createSatellite(id2, type, height, position2);
-        assertEquals(new EntityInfoResponse(id1, position1, height, type), controller.getInfo(id1));
-        assertEquals(new EntityInfoResponse(id2, position2, height, type), controller.getInfo(id2));
-
-        System.out.println("Initial position: " + controller.getInfo(id2));
-
-        /**
-         * Satellite at 1°
-         * 1 m: 2.2275
-         * 2 m: 3.4551
-         * 114 m: 140.9434
-         * 153 m: 188.8187
-         * 154 m: 190.0463
-         * 155 m: 188.8187
-         * 194 m: 140.9434
-         * 195 m: 139.7158
-         * 196 m: 140.9434
-         */
-
-        /**
-         * Satellite at 359°
-         * 1 m: 0.2275
-         * 2 m: 1.4551
-         * 155 m: 189.2739
-         * 156 m: 190.5015
-         * 157 m: 189.2739
-         * 197 m: 140.1709
-         * 198 m: 138.9434
-         * 199 m: 140.1709
-         */
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(2.2275), height, type), controller.getInfo(id1));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(0.2275), height, type), controller.getInfo(id2));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(3.4551), height, type), controller.getInfo(id1));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(1.4551), height, type), controller.getInfo(id2));
-
-        // At 114 minutes
-        controller.simulate(112);
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(140.9434), height, type), controller.getInfo(id1));
-
-        // At 153 minutes
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(188.8187), height, type), controller.getInfo(id1));
-
-        // At 154 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(190.0463), height, type), controller.getInfo(id1));
-
-        // At 155 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(188.8187), height, type), controller.getInfo(id1));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(189.2739), height, type), controller.getInfo(id2));
-
-        // At 194 minutes
-        controller.simulate(39);
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(140.9434), height, type), controller.getInfo(id1));
-
-        // At 195 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(139.7158), height, type), controller.getInfo(id1));
-
-        // At 196 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id1, Angle.fromDegrees(140.9434), height, type), controller.getInfo(id1));
-
-        // At 197 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(140.1709), height, type), controller.getInfo(id2));
-
-        // At 198 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(138.9434), height, type), controller.getInfo(id2));
-
-        // At 199 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(140.1709), height, type), controller.getInfo(id2));
-
-        // At 200 minutes
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(141.3985), height, type), controller.getInfo(id2));
-
-    }
-
-    @Test
-    public void testTeleportingMovementBefore180() {
-        // Start before 180° (179°)
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(179);
-        final String id = "Teleporting1";
-        final String type = "TeleportingSatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-        // 1 m: 179.8183
-        // 2 m: 360
-        // 222 m: 0
-        // 442 m: 360.0
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(179.8183), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(360), height, type), controller.getInfo(id));
-
-        controller.simulate(220);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0), height, type), controller.getInfo(id));
-
-        controller.simulate(220);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(360), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testTeleportingMovementAt180() {
-        // Start on 180°
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(180);
-        final String id = "Teleporting2";
-        final String type = "TeleportingSatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-
-        System.out.println("Initial position: " + controller.getInfo(id));
-        // 1 m: 180.8183
-        // 2 m: 181.6367
-        // 219 m: 359.2257
-        // 220 m: 0.0441
-        // 440 m: 360.0
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(180.8183), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(181.6367), height, type), controller.getInfo(id));
-
-        controller.simulate(217);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(359.2257), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0.0441), height, type), controller.getInfo(id));
-
-        controller.simulate(220);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(360), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testTeleportingMovementAfter180() {
-        // Start after 180° (181°)
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(181);
-        final String id = "Teleporting2";
-        final String type = "TeleportingSatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-
-        System.out.println("Initial position: " + controller.getInfo(id));
-        // 1 m: 181.8183
-        // 218 m: 359.4073
-        // 219 m: 0.2257
-        // 220 m: 1.0441
-        // 439 m: 360.0
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(181.8183), height, type), controller.getInfo(id));
-
-        controller.simulate(217);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(359.4073), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0.2257), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(1.0441), height, type), controller.getInfo(id));
-
-        controller.simulate(219);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(360), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testTeleportingMovementat360() {
-        // Start on 0° (360° and 0°)
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(360);
-        final Angle position2 = Angle.fromDegrees(0);
-        final String id = "Teleporting";
-        final String id2 = "Teleporting2";
-        final String type = "TeleportingSatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-        controller.createSatellite(id2, type, height, position2);
-
-        System.out.println("Initial position: " + controller.getInfo(id));
-        // 1 m: 0.8183
-        // 2 m: 1.6367
-        // 219 m: 179.2257
-        // 220 m: 360.0
-        // 221 m: 359.1816
-        // 439 m: 180.7742
-        // 440 m: 0
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0.8183), height, type), controller.getInfo(id));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(0.8183), height, type), controller.getInfo(id2));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(1.6367), height, type), controller.getInfo(id));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(1.6367), height, type), controller.getInfo(id2));
-
-        controller.simulate(217);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(179.2257), height, type), controller.getInfo(id));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(179.2257), height, type), controller.getInfo(id2));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(360), height, type), controller.getInfo(id));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(360), height, type), controller.getInfo(id2));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(359.1816), height, type), controller.getInfo(id));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(359.1816), height, type), controller.getInfo(id2));
-
-        controller.simulate(218);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(180.7742), height, type), controller.getInfo(id));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(180.7742), height, type), controller.getInfo(id2));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0), height, type), controller.getInfo(id));
-        assertEquals(new EntityInfoResponse(id2, Angle.fromDegrees(0), height, type), controller.getInfo(id2));
-    }
-
-    @Test
-    public void testTeleportingMovementbefore360() {
-        // Start before 0° (359)
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(359);
-        final String id = "Teleporting";
-        final String type = "TeleportingSatellite";
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-
-        System.out.println("Initial position: " + controller.getInfo(id));
-
-        // 1 m: 359.8183
-        // 2 m: 0.6367
-        // 3 m: 1.4551
-        // 222 m: 360
-        // 442 m: 0
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(359.8183), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0.6367), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(1.4551), height, type), controller.getInfo(id));
-
-        controller.simulate(219);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(360), height, type), controller.getInfo(id));
-
-        controller.simulate(220);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0), height, type), controller.getInfo(id));
-    }
-
-    @Test
-    public void testTeleportingMovemenafter360() {
-        // Start after 0° (1°)
-        final double height = 70011;
-        final Angle position = Angle.fromDegrees(1);
-        final String id = "Teleporting";
-        final String type = "TeleportingSatellite";
-
-        // 1 m: 1.8183
-        // 2 m: 2.6367
-        // 122 m: 100.8426
-        // 219 m: 360.0
-        // 439 m: 0
-        // 440 m: 0.8183
-
-        BlackoutController controller = new BlackoutController();
-        controller.createSatellite(id, type, height, position);
-
-        System.out.println("Initial position: " + controller.getInfo(id));
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(1.8183), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(2.6367), height, type), controller.getInfo(id));
-
-        controller.simulate(120);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(100.8426), height, type), controller.getInfo(id));
-
-        controller.simulate(97);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(360), height, type), controller.getInfo(id));
-
-        controller.simulate(220);
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0), height, type), controller.getInfo(id));
-
-        controller.simulate();
-        assertEquals(new EntityInfoResponse(id, Angle.fromDegrees(0.8183), height, type), controller.getInfo(id));
-    }
-
     @Test
     public void testOutOfRangeStandard() {
         BlackoutController controller = new BlackoutController();
@@ -841,7 +156,7 @@ public class MyTests {
     }
 
     @Test
-    public void testTeleportingSatelliteTransfers() {
+    public void testTeleportingSatelliteConcurrentTransfers() {
         BlackoutController controller = new BlackoutController();
 
         // SatelliteA teleports to 360 after 2 mins
@@ -932,4 +247,322 @@ public class MyTests {
                 controller.getInfo("SatelliteB").getFiles().get("FileA"));
     }
 
+    @Test
+    public void testStandardTransferExceptions() {
+        BlackoutController controller = new BlackoutController();
+        controller.createSatellite("SatelliteA", "StandardSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(320));
+        controller.createDevice("DeviceA", "HandheldDevice", Angle.fromDegrees(320));
+
+        // Check bandwidth Exception - Standard can only send or receive 1 byte
+        String msg = "Hey";
+        controller.addFileToDevice("DeviceA", "FileAlpha", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileAlpha", "DeviceA", "SatelliteA"));
+
+        controller.addFileToDevice("DeviceA", "FileBeta", msg);
+        assertThrows(FileTransferException.VirtualFileNoBandwidthException.class,
+                () -> controller.sendFile("FileBeta", "DeviceA", "SatelliteA"));
+
+        // Check storage exception - Standard can only hold 3 files
+        controller.simulate(msg.length());
+        assertDoesNotThrow(() -> controller.sendFile("FileBeta", "DeviceA", "SatelliteA"));
+
+        controller.simulate(msg.length());
+        controller.addFileToDevice("DeviceA", "FileGamma", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileGamma", "DeviceA", "SatelliteA"));
+
+        controller.simulate(msg.length());
+        controller.addFileToDevice("DeviceA", "FileDelta", msg);
+        assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                () -> controller.sendFile("FileDelta", "DeviceA", "SatelliteA"));
+
+        // Check storage exception - Standard can only hold 80 bytes
+        controller.createSatellite("SatelliteB", "StandardSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(320));
+
+        byte[] content = new byte[81];
+        Arrays.fill(content, (byte) 'a');
+        msg = new String(content);
+        controller.addFileToDevice("DeviceA", "FileEpsilon", msg);
+        assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                () -> controller.sendFile("FileEpsilon", "DeviceA", "SatelliteB"));
+
+    }
+
+    @Test
+    public void testTeleportingTransferExceptions() {
+        // 10000 + RADIUS_OF_JUPITER = 10000 + 69911 = 79911
+        BlackoutController controller = new BlackoutController();
+        controller.createSatellite("SatelliteA", "TeleportingSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(359));
+        controller.createDevice("DeviceA", "HandheldDevice", Angle.fromDegrees(359));
+        controller.createDevice("DeviceB", "DesktopDevice", Angle.fromDegrees(15));
+
+        // check receiving bandwidth exception - teleporting can only receive 15 bytes (no more than 15 files)
+        String msg = "Hi";
+        // send 15 files (total 30 bytes) to the satellite
+        for (int i = 1; i <= 15; i++) {
+            final int index = i;
+            controller.addFileToDevice("DeviceA", "File" + index, msg);
+            assertDoesNotThrow(() -> controller.sendFile("File" + index, "DeviceA", "SatelliteA"));
+        }
+
+        // send 16th file (total 32 bytes) to the satellite => should throw exception
+        controller.addFileToDevice("DeviceA", "File16", msg);
+        assertThrows(FileTransferException.VirtualFileNoBandwidthException.class,
+                () -> controller.sendFile("File16", "DeviceA", "SatelliteA"));
+
+        // complete the transfer of the first 15 files
+        controller.simulate(msg.length());
+
+        // check sending bandwidth exception - teleporting can only send 10 bytes (no more than 10 files)
+        // send 10 files (total 20 bytes) to deviceB
+        for (int i = 1; i <= 10; i++) {
+            final int index = i;
+            assertDoesNotThrow(() -> controller.sendFile("File" + index, "SatelliteA", "DeviceB"));
+        }
+
+        // send 11th file (total 22 bytes) to deviceB => should throw exception
+        assertThrows(FileTransferException.VirtualFileNoBandwidthException.class,
+                () -> controller.sendFile("File11", "SatelliteA", "DeviceB"));
+
+        // check storage exception - teleporting can store up to 200 bytes
+        controller.createSatellite("SatelliteB", "TeleportingSatellite", 10000 + RADIUS_OF_JUPITER,
+                Angle.fromDegrees(30));
+        // send 200 bytes to the satelliteB
+        String msg1 = "a".repeat(200);
+        assertEquals(200, msg1.length());
+        controller.addFileToDevice("DeviceB", "FileAlpha", msg1);
+        assertDoesNotThrow(() -> controller.sendFile("FileAlpha", "DeviceB", "SatelliteB"));
+        // send another 1 byte to the satelliteB => should throw exception
+        controller.addFileToDevice("DeviceB", "FileBeta", "a");
+        assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                () -> controller.sendFile("FileBeta", "DeviceB", "SatelliteB"));
+    }
+
+    @Test
+    public void testEntitiesInRange() {
+        BlackoutController controller = new BlackoutController();
+
+        // Relays should show up in the list of entities in range BUT you cannot send files to them
+        controller.createSatellite("1", "StandardSatellite", 78880, Angle.fromDegrees(0));
+        controller.createSatellite("2", "RelaySatellite", 79113, Angle.fromDegrees(33.4653));
+        controller.createSatellite("3", "TeleportingSatellite", 75854, Angle.fromDegrees(69.2667));
+        controller.createSatellite("4", "StandardSatellite", 76868, Angle.fromDegrees(112.5332));
+        controller.createSatellite("5", "StandardSatellite", 77889, Angle.fromDegrees(149.2775));
+        controller.createSatellite("6", "TeleportingSatellite", 75402, Angle.fromDegrees(186.1701));
+        controller.createSatellite("7", "RelaySatellite", 77516, Angle.fromDegrees(222.9833));
+        controller.createSatellite("8", "TeleportingSatellite", 77784, Angle.fromDegrees(257.4711));
+        controller.createSatellite("9", "RelaySatellite", 78387, Angle.fromDegrees(296.07));
+        controller.createSatellite("10", "RelaySatellite", 77889, Angle.fromDegrees(329.2775));
+
+        controller.createDevice("A", "HandheldDevice", Angle.fromDegrees(276.1701));
+        controller.createDevice("B", "HandheldDevice", Angle.fromDegrees(202.6198));
+        controller.createDevice("C", "HandheldDevice", Angle.fromDegrees(164.389));
+        controller.createDevice("D", "HandheldDevice", Angle.fromDegrees(90));
+        controller.createDevice("E", "HandheldDevice", Angle.fromDegrees(28.429));
+
+        String msg = "Test File";
+        controller.addFileToDevice("A", "FileA", msg);
+        controller.addFileToDevice("B", "FileB", msg);
+        controller.addFileToDevice("C", "FileC", msg);
+        controller.addFileToDevice("D", "FileD", msg);
+        controller.addFileToDevice("E", "FileE", msg);
+
+        // checking devices
+        String[] inRangeOfA = {
+                "1", "8", "9", "10"
+        };
+        String[] inRangeOfB = {
+                "6", "7", "8"
+        };
+        String[] inRangeOfC = {
+                "5", "6"
+        };
+        String[] inRangeOfD = {
+                "3", "4"
+        };
+        String[] inRangeOfE = {
+                "1", "2", "3"
+        };
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOfA), controller.communicableEntitiesInRange("A"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOfB), controller.communicableEntitiesInRange("B"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOfC), controller.communicableEntitiesInRange("C"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOfD), controller.communicableEntitiesInRange("D"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOfE), controller.communicableEntitiesInRange("E"));
+
+        // checking satellites
+        String[] inRangeOf1 = {
+                "2", "3", "8", "9", "10", "E", "A"
+        };
+        String[] inRangeOf2 = {
+                "1", "3", "E"
+        };
+        String[] inRangeOf3 = {
+                "1", "2", "4", "D", "E"
+        };
+        String[] inRangeOf4 = {
+                "3", "5", "D"
+        };
+        String[] inRangeOf5 = {
+                "4", "6", "C"
+        };
+        String[] inRangeOf6 = {
+                "5", "7", "8", "B", "C"
+        };
+        String[] inRangeOf7 = {
+                "6", "8", "B"
+        };
+        String[] inRangeOf8 = {
+                "1", "6", "7", "9", "10", "A", "B"
+        };
+        String[] inRangeOf9 = {
+                "1", "8", "10", "A"
+        };
+        String[] inRangeOf10 = {
+                "1", "8", "9", "A"
+        };
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf1), controller.communicableEntitiesInRange("1"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf2), controller.communicableEntitiesInRange("2"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf3), controller.communicableEntitiesInRange("3"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf4), controller.communicableEntitiesInRange("4"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf5), controller.communicableEntitiesInRange("5"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf6), controller.communicableEntitiesInRange("6"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf7), controller.communicableEntitiesInRange("7"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf8), controller.communicableEntitiesInRange("8"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf9), controller.communicableEntitiesInRange("9"));
+        assertListAreEqualIgnoringOrder(Arrays.asList(inRangeOf10), controller.communicableEntitiesInRange("10"));
+
+        // sending files from devices to entities in range
+        assertAll(() -> {
+            // VirtualFileNoStorageSpaceException:Max Files Reached on 9 and 10
+            assertDoesNotThrow(() -> controller.sendFile("FileA", "A", "1"));
+            assertDoesNotThrow(() -> controller.sendFile("FileA", "A", "8"));
+            assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                    () -> controller.sendFile("FileA", "A", "9"));
+            assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                    () -> controller.sendFile("FileA", "A", "10"));
+        });
+
+        assertAll(() -> {
+            // VirtualFileNoStorageSpaceException:Max Files Reached on 6 and 7
+            assertDoesNotThrow(() -> controller.sendFile("FileB", "B", "6"));
+            assertDoesNotThrow(() -> controller.sendFile("FileB", "B", "8"));
+            assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                    () -> controller.sendFile("FileB", "B", "7"));
+        });
+
+        assertAll(() -> {
+            for (String id : inRangeOfC) {
+                assertDoesNotThrow(() -> controller.sendFile("FileC", "C", id));
+            }
+        });
+
+        assertAll(() -> {
+            for (String id : inRangeOfD) {
+                assertDoesNotThrow(() -> controller.sendFile("FileD", "D", id));
+            }
+        });
+
+        assertAll(() -> {
+            // VirtualFileNoBandwidthException:1
+            assertThrows(FileTransferException.VirtualFileNoBandwidthException.class,
+                    () -> controller.sendFile("FileE", "E", "1"));
+            // VirtualFileNoStorageSpaceException:Max Files Reached on 2
+            assertThrows(FileTransferException.VirtualFileNoStorageSpaceException.class,
+                    () -> controller.sendFile("FileE", "E", "2"));
+            assertDoesNotThrow(() -> controller.sendFile("FileE", "E", "3"));
+        });
+    }
+
+    @Test
+    public void testEntitiesInRangeRelay() {
+        BlackoutController controller = new BlackoutController();
+        controller.createSatellite("Satellite1", "StandardSatellite", 72369, Angle.fromDegrees(8.376));
+        controller.createDevice("Device1", "HandheldDevice", Angle.fromDegrees(53.2072));
+
+        // Device1 not visible to any
+        assertListAreEqualIgnoringOrder(java.util.Collections.emptyList(),
+                controller.communicableEntitiesInRange("Device1"));
+
+        controller.createSatellite("Relay1", "RelaySatellite", 76513, Angle.fromDegrees(32.7884));
+
+        // Device1 can now communicate with Satellite1
+        assertListAreEqualIgnoringOrder(Arrays.asList("Satellite1", "Relay1"),
+                controller.communicableEntitiesInRange("Device1"));
+
+        // Satellite1 can now communicate with all
+        assertListAreEqualIgnoringOrder(Arrays.asList("Device1", "Relay1"),
+                controller.communicableEntitiesInRange("Satellite1"));
+    }
+
+    @Test
+    public void testRemoveSenderDuringTransfer() {
+        BlackoutController controller = new BlackoutController();
+
+        controller.createSatellite("Satellite1", "StandardSatellite", 80000, Angle.fromDegrees(0));
+        controller.createDevice("Device1", "HandheldDevice", Angle.fromDegrees(30));
+        controller.createSatellite("Relay1", "RelaySatellite", 83611, Angle.fromDegrees(39.1736));
+        assertListAreEqualIgnoringOrder(Arrays.asList("Satellite1", "Relay1"),
+                controller.communicableEntitiesInRange("Device1"));
+
+        // Creates a file and sends it to the satellite
+        String msg = "Test File";
+        controller.addFileToDevice("Device1", "FileAlpha", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileAlpha", "Device1", "Satellite1"));
+
+        controller.simulate();
+
+        // Remove the device while the file is being transferred
+        assertDoesNotThrow(() -> controller.removeDevice("Device1"));
+
+        // Satellite should still have file but incomplete (1/9 bytes)
+        assertEquals(new FileInfoResponse("FileAlpha", "T", msg.length(), false),
+                controller.getInfo("Satellite1").getFiles().get("FileAlpha"));
+    }
+
+    @Test
+    public void testOutOfRangeDuringTransfer() {
+        BlackoutController controller = new BlackoutController();
+        controller.createDevice("Device1", "HandheldDevice", Angle.fromDegrees(30));
+        controller.createSatellite("Relay1", "RelaySatellite", 81259, Angle.fromDegrees(58.1282));
+        controller.createSatellite("Relay2", "RelaySatellite", 80535, Angle.fromDegrees(113.334));
+        controller.createSatellite("Relay3", "RelaySatellite", 81472, Angle.fromDegrees(156.012));
+
+        // TeleportingSatellite1 teleports after 2 mins
+        controller.createSatellite("Teleporting1", "TeleportingSatellite", 70011, Angle.fromDegrees(179));
+        controller.createSatellite("Teleporting2", "TeleportingSatellite", 76819, Angle.fromDegrees(88.8308));
+
+        assertListAreEqualIgnoringOrder(Arrays.asList("Relay1", "Relay2", "Relay3", "Teleporting1", "Teleporting2"),
+                controller.communicableEntitiesInRange("Device1"));
+
+        // Creates a file and sends it to the satellite1 and satellite2
+        String msg = "This is a test file with many tttttsss";
+        controller.addFileToDevice("Device1", "FileAlpha", msg);
+        assertDoesNotThrow(() -> controller.sendFile("FileAlpha", "Device1", "Teleporting1"));
+        assertDoesNotThrow(() -> controller.sendFile("FileAlpha", "Device1", "Teleporting2"));
+
+        controller.simulate();
+
+        // Check that each have 15/38 bytes downloaded
+        assertEquals(new FileInfoResponse("FileAlpha", "This is a test ", msg.length(), false),
+                controller.getInfo("Teleporting1").getFiles().get("FileAlpha"));
+
+        assertEquals(new FileInfoResponse("FileAlpha", "This is a test ", msg.length(), false),
+                controller.getInfo("Teleporting2").getFiles().get("FileAlpha"));
+
+        controller.simulate();
+        // Check that teleporting1 has no file after teleporting
+        assertEquals(null, controller.getInfo("Teleporting1").getFiles().get("FileAlpha"));
+        // Device has t bytes removed
+        assertEquals(new FileInfoResponse("FileAlpha", "This is a es file wih many sss", 30, true),
+                controller.getInfo("Device1").getFiles().get("FileAlpha"));
+        // Teleporting2 has 30/38 bytes downloaded
+        assertEquals(new FileInfoResponse("FileAlpha", "This is a test file with many ", msg.length(), false),
+                controller.getInfo("Teleporting2").getFiles().get("FileAlpha"));
+
+        controller.simulate();
+        // Teleporting2 out of range and file is removed
+        assertEquals(null, controller.getInfo("Teleporting2").getFiles().get("FileAlpha"));
+    }
 }
