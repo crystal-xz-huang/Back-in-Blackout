@@ -82,7 +82,6 @@ public class BlackoutController {
 
     public void simulate(int numberOfMinutes) {
         for (int i = 0; i < numberOfMinutes; i++) {
-            System.out.println("Minute " + (i + 1));
             simulate();
         }
     }
@@ -90,12 +89,6 @@ public class BlackoutController {
     public List<String> communicableEntitiesInRange(String id) {
         Entity src = system.getEntity(id);
         List<Entity> entities = system.listEntities();
-        for (Entity entity : entities) {
-            if (system.canCommunicate(src, entity)) {
-                System.out.println(entity.getId() + " can communicate with " + src.getId());
-                System.out.println(entity.getId());
-            }
-        }
         return entities.stream().filter(dest -> system.canCommunicate(src, dest)).map(Entity::getId)
                 .collect(Collectors.toList());
     }

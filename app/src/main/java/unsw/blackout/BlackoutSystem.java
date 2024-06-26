@@ -15,11 +15,37 @@ public class BlackoutSystem extends JupiterSystem {
             return false;
         } else if (from.supports(to) && inRangeAndVisible(from, to)) {
             return true;
-        } else if (from instanceof RelaySatellite || to instanceof RelaySatellite) {
-            return false;
         } else {
             return hasRelayPath(from, to);
         }
+    }
+
+    private boolean hasRelayPath(Entity from, Entity to) {
+        List<Entity> relays = listRelaySatellites(from, to);
+        Queue<Entity> queue = new LinkedList<>();
+        Set<Entity> visited = new HashSet<>();
+
+        visited.add(from);
+        queue.add(from);
+
+        while (!queue.isEmpty()) {
+            Entity current = queue.poll();
+            if (current.equals(to)) {
+                return true;
+            }
+
+            for (Entity relay : relays) {
+                if (!visited.contains(relay) && inRangeAndVisible(current, relay)) {
+                    visited.add(relay);
+                    queue.add(relay);
+                }
+            }
+
+            if (inRangeAndVisible(current, to)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void moveSatellites() {
@@ -55,7 +81,6 @@ public class BlackoutSystem extends JupiterSystem {
         FileStorage toFiles = to.getFiles();
 
         FileTransfer transfer = new FileTransfer(fileName, fromFiles, toFiles, from, to);
-        System.out.println("Sending file: " + fileName + " from " + fromId + " to " + toId);
         transfers.add(transfer);
         transfer.sendFile();
     }
@@ -85,41 +110,14 @@ public class BlackoutSystem extends JupiterSystem {
         }
     }
 
-    private boolean hasRelayPath(Entity from, Entity to) {
-        List<Entity> relays = listRelaySatellites();
-        Queue<Entity> queue = new LinkedList<>();
-        Set<Entity> visited = new HashSet<>();
-
-        visited.add(from);
-        queue.add(from);
-
-        while (!queue.isEmpty()) {
-            Entity current = queue.poll();
-            if (current.equals(to)) {
-                return true;
-            }
-
-            for (Entity relay : relays) {
-                if (!visited.contains(relay) && inRangeAndVisible(current, relay)) {
-                    visited.add(relay);
-                    queue.add(relay);
-                }
-            }
-
-            if (inRangeAndVisible(current, to)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private List<Satellite> listSatellites() {
         return listEntities().stream().filter(e -> e instanceof Satellite).map(e -> (Satellite) e)
                 .collect(Collectors.toList());
     }
 
-    private List<Entity> listRelaySatellites() {
-        return listEntities().stream().filter(e -> e instanceof RelaySatellite).collect(Collectors.toList());
+    private List<Entity> listRelaySatellites(Entity from, Entity to) {
+        return listEntities().stream().filter(e -> e instanceof RelaySatellite && !e.equals(from) && !e.equals(to))
+                .collect(Collectors.toList());
     }
 
 }
