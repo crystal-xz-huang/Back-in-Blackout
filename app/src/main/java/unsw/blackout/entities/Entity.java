@@ -34,10 +34,6 @@ public abstract class Entity {
         return id;
     }
 
-    public String getType() {
-        return type;
-    }
-
     public Angle getPosition() {
         return position;
     }
@@ -51,7 +47,7 @@ public abstract class Entity {
     }
 
     public EntityInfoResponse getInfo() {
-        List<File> filesList = files.getFiles();
+        List<File> filesList = files.listFiles();
         Map<String, FileInfoResponse> fileInfo = new HashMap<>();
         for (File file : filesList) {
             fileInfo.put(file.getFileName(), file.getInfo());
@@ -97,4 +93,20 @@ public abstract class Entity {
         File file = files.getFile(fileName);
         return file == null;
     }
+
+    public void sendFileTo(String fileName, FileStorage toFiles) {
+        File file = files.getFile(fileName);
+        files.incrementOutgoingFiles();
+        toFiles.addFile(fileName, file.getContent(), false);
+        toFiles.incrementIncomingFiles();
+    }
+
+    public boolean maxFilesReached() {
+        return files.maxFilesReached();
+    }
+
+    public boolean maxStorageReached(int size) {
+        return files.maxStorageReached(size);
+    }
+
 }

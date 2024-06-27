@@ -6,6 +6,7 @@ public class File {
     private String fileName;
     private String content;
     private String data;
+    private boolean isTransient;
 
     public File(String fileName, String content, boolean isComplete) {
         this.fileName = fileName;
@@ -65,5 +66,17 @@ public class File {
 
     public void removeTBytes() {
         content = content.replaceAll("t", "");
+    }
+
+    public void setTransient(boolean isTransient) {
+        this.isTransient = isTransient;
+    }
+
+    public boolean isTransient() {
+        return isTransient;
+    }
+
+    public int getTransferredBytes() {
+        return data.length();
     }
 }

@@ -79,12 +79,6 @@ public class TeleportingSatellite extends Satellite {
 
     @Override
     public boolean supports(Entity dest) {
-        if (dest instanceof Satellite) {
-            return true;
-        } else if (dest instanceof Device) {
-            String type = dest.getType();
-            return type.equals("HandheldDevice") || type.equals("LaptopDevice");
-        }
-        return false;
+        return dest instanceof Satellite || dest instanceof HandheldDevice || dest instanceof LaptopDevice;
     }
 }

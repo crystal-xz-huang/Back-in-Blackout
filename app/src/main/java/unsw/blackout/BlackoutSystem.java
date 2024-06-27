@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import unsw.blackout.files.*;
+import unsw.blackout.transfers.FileTransfer;
 import unsw.blackout.entities.*;
 
 public class BlackoutSystem extends JupiterSystem {
@@ -20,8 +21,9 @@ public class BlackoutSystem extends JupiterSystem {
         }
     }
 
+    // Find the shortest path with BFS
     private boolean hasRelayPath(Entity from, Entity to) {
-        List<Entity> relays = listRelaySatellites(from, to);
+        List<Entity> relays = listRelaySatellites(from, to); // this is the nodes in the graph
         Queue<Entity> queue = new LinkedList<>();
         Set<Entity> visited = new HashSet<>();
 
@@ -58,11 +60,11 @@ public class BlackoutSystem extends JupiterSystem {
         for (FileTransfer transfer : transfers) {
             Entity from = transfer.getFrom();
             Entity to = transfer.getTo();
-            if (!canCommunicate(from, to) && !transfer.isTeleportingTransfer()) {
-                transfer.cancel();
+            if (!canCommunicate(from, to)) {
+                transfer.setOutOfRange();
             }
         }
-        transfers.forEach(t -> t.updateTransfer());
+        transfers.forEach(t -> t.resume());
         transfers.removeIf(t -> t.isComplete() || t.isCancelled());
     }
 
@@ -73,7 +75,7 @@ public class BlackoutSystem extends JupiterSystem {
     }
 
     public void sendFile(String fileName, String fromId, String toId) throws FileTransferException {
-        transferExceptionChecks(fileName, fromId, toId);
+        performTransferChecks(fileName, fromId, toId);
 
         Entity from = getEntity(fromId);
         Entity to = getEntity(toId);
@@ -82,10 +84,10 @@ public class BlackoutSystem extends JupiterSystem {
 
         FileTransfer transfer = new FileTransfer(fileName, fromFiles, toFiles, from, to);
         transfers.add(transfer);
-        transfer.sendFile();
+        from.sendFileTo(fileName, toFiles);
     }
 
-    private void transferExceptionChecks(String fileName, String fromId, String toId) throws FileTransferException {
+    private void performTransferChecks(String fileName, String fromId, String toId) throws FileTransferException {
         Entity from = getEntity(fromId);
         Entity to = getEntity(toId);
         FileStorage fromFiles = from.getFiles();

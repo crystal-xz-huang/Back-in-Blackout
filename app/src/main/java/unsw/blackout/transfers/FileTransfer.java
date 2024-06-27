@@ -1,8 +1,10 @@
-package unsw.blackout.files;
+package unsw.blackout.transfers;
 
 import unsw.blackout.entities.Device;
+import unsw.blackout.entities.ElephantSatellite;
 import unsw.blackout.entities.Entity;
 import unsw.blackout.entities.TeleportingSatellite;
+import unsw.blackout.files.FileStorage;
 
 public class FileTransfer {
     private String fileName;
@@ -10,10 +12,11 @@ public class FileTransfer {
     private FileStorage toFiles;
     private Entity from;
     private Entity to;
-    private int progress;
+    private int transferredBytes;
     private int size;
     private boolean isComplete = false;
     private boolean isCancelled = false;
+    private boolean isPaused = false;
 
     public FileTransfer(String fileName, FileStorage fromFiles, FileStorage toFiles, Entity from, Entity to) {
         this.fileName = fileName;
@@ -21,22 +24,19 @@ public class FileTransfer {
         this.toFiles = toFiles;
         this.from = from;
         this.to = to;
-        this.progress = 0;
+        this.transferredBytes = 0;
         this.size = fromFiles.getFileSize(fileName);
     }
 
-    public void sendFile() {
-        File file = fromFiles.getFile(fileName);
-        fromFiles.incrementOutgoingFiles();
-        toFiles.addFile(fileName, file.getContent(), false);
-        toFiles.incrementIncomingFiles();
-    }
-
-    public void updateTransfer() {
+    public void resume() {
         if (isComplete || isCancelled) {
             return;
         }
-        if (isTeleportingTransfer()) {
+
+        if (isPaused) {
+            toFiles.setTransient(fileName, false);
+        }
+        if (teleported()) {
             updateTeleportingTransfer();
         } else {
             updateNormalTransfer();
@@ -45,12 +45,12 @@ public class FileTransfer {
 
     private void updateNormalTransfer() {
         int transferRate = Math.min(from.getSendingSpeed(), to.getReceivingSpeed());
-        int progressIncrement = Math.min(transferRate, size - progress);
-        progress += progressIncrement;
-        if (progress == size) {
+        int transferredBytesIncrement = Math.min(transferRate, size - transferredBytes);
+        transferredBytes += transferredBytesIncrement;
+        if (transferredBytes == size) {
             complete();
         }
-        toFiles.updateFileData(fileName, progress);
+        toFiles.updateFileData(fileName, transferredBytes);
     }
 
     private void updateTeleportingTransfer() {
@@ -59,28 +59,45 @@ public class FileTransfer {
             fromFiles.setComplete(fileName);
             cancel();
         } else {
-            toFiles.removeRemainingTBytes(fileName, progress);
+            toFiles.removeRemainingTBytes(fileName, transferredBytes);
             toFiles.setComplete(fileName);
-            progress = size;
+            transferredBytes = size;
             complete();
         }
     }
 
-    public void complete() {
+    public void setOutOfRange() {
+        if (teleported()) {
+            return;
+        } else if (to instanceof ElephantSatellite && !paused()) {
+            pause();
+        } else {
+            cancel();
+        }
+    }
+
+    private void complete() {
         fromFiles.decrementOutgoingFiles();
         toFiles.decrementIncomingFiles();
         toFiles.setComplete(fileName);
         isComplete = true;
     }
 
-    public void cancel() {
+    private void pause() {
+        fromFiles.decrementOutgoingFiles();
+        toFiles.decrementIncomingFiles();
+        toFiles.setTransient(fileName, true);
+        isPaused = true;
+    }
+
+    private void cancel() {
         fromFiles.decrementOutgoingFiles();
         toFiles.decrementIncomingFiles();
         toFiles.removeFile(fileName);
         isCancelled = true;
     }
 
-    public boolean isTeleportingTransfer() {
+    public boolean teleported() {
         if (from instanceof TeleportingSatellite && to instanceof TeleportingSatellite) {
             return ((TeleportingSatellite) from).hasTeleported() || ((TeleportingSatellite) to).hasTeleported();
         } else if (from instanceof TeleportingSatellite) {
@@ -90,6 +107,10 @@ public class FileTransfer {
         } else {
             return false;
         }
+    }
+
+    public boolean paused() {
+        return toFiles.isTransient(fileName);
     }
 
     public Entity getFrom() {
@@ -109,6 +130,7 @@ public class FileTransfer {
     }
 
     public int getBytesRemaining() {
-        return size - progress;
+        return size - transferredBytes;
     }
+
 }
