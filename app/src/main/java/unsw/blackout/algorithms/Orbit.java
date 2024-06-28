@@ -1,10 +1,10 @@
-package unsw.blackout;
+package unsw.blackout.algorithms;
 
 import unsw.utils.Angle;
 import static unsw.utils.MathsHelper.CLOCKWISE;
 
 public interface Orbit {
-    private static Angle normalizeAngle(Angle angle) {
+    public static Angle normalizeAngle(Angle angle) {
         double degrees = angle.toDegrees();
         double normalizedDegrees = (degrees % 360 + 360) % 360;
         return Angle.fromDegrees(normalizedDegrees);

@@ -5,23 +5,7 @@ import java.util.List;
 import unsw.blackout.files.File;
 
 public class KnapsackSolver {
-    // Returns the maximum value that can be put in a knapsack of capacity W
-    public static int solveKnapsack(int[] values, int[] weights, int capacity) {
-        int n = values.length;
-        int[][] dp = new int[n + 1][capacity + 1];
-        for (int i = 1; i <= n; i++) {
-            for (int j = 1; j <= capacity; j++) {
-                if (weights[i - 1] <= j) {
-                    dp[i][j] = Math.max(dp[i - 1][j], values[i - 1] + dp[i - 1][j - weights[i - 1]]);
-                } else {
-                    dp[i][j] = dp[i - 1][j];
-                }
-            }
-        }
-        return dp[n][capacity];
-    }
-
-    // Returns the files that can be transferred to maximize the total transferred bytes
+    // Returns the files that can be included to maximize the total transferred bytes
     public static List<File> solveKnapsack(List<File> files, int capacity) {
         int n = files.size();
         int[][] dp = new int[n + 1][capacity + 1];

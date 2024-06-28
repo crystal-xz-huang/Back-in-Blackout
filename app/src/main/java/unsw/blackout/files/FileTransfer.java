@@ -1,10 +1,6 @@
-package unsw.blackout.transfers;
+package unsw.blackout.files;
 
-import unsw.blackout.entities.Device;
-import unsw.blackout.entities.ElephantSatellite;
-import unsw.blackout.entities.Entity;
-import unsw.blackout.entities.TeleportingSatellite;
-import unsw.blackout.files.FileStorage;
+import unsw.blackout.entities.*;
 
 public class FileTransfer {
     private String fileName;
@@ -28,19 +24,62 @@ public class FileTransfer {
         this.size = fromFiles.getFileSize(fileName);
     }
 
-    public void resume() {
-        if (isComplete || isCancelled) {
+    public void setOutOfRange() {
+        if (teleported()) {
             return;
+        } else if (to instanceof ElephantSatellite && !isPaused) {
+            pause();
+        } else if (!(to instanceof ElephantSatellite)) {
+            cancel();
         }
+    }
 
-        if (isPaused) {
-            toFiles.setTransient(fileName, false);
-        }
+    public void start() {
         if (teleported()) {
             updateTeleportingTransfer();
         } else {
             updateNormalTransfer();
         }
+    }
+
+    public void resume() {
+        toFiles.setTransient(fileName, false);
+        toFiles.incrementIncomingFiles();
+        fromFiles.incrementOutgoingFiles();
+        isPaused = false;
+    }
+
+    public Entity getFrom() {
+        return from;
+    }
+
+    public Entity getTo() {
+        return to;
+    }
+
+    public boolean isPaused() {
+        return isPaused;
+    }
+
+    public boolean isComplete() {
+        return isComplete;
+    }
+
+    public boolean isCancelled() {
+        return isCancelled;
+    }
+
+    public boolean isReady() {
+        return !isComplete && !isCancelled && !isPaused;
+    }
+
+    public boolean isDeleted() {
+        return (to instanceof ElephantSatellite) && toFiles.getFile(fileName) == null;
+    }
+
+    public void updateRemovedTransientFiles() {
+        fromFiles.incrementOutgoingFiles();
+        toFiles.incrementIncomingFiles();
     }
 
     private void updateNormalTransfer() {
@@ -66,16 +105,6 @@ public class FileTransfer {
         }
     }
 
-    public void setOutOfRange() {
-        if (teleported()) {
-            return;
-        } else if (to instanceof ElephantSatellite && !paused()) {
-            pause();
-        } else {
-            cancel();
-        }
-    }
-
     private void complete() {
         fromFiles.decrementOutgoingFiles();
         toFiles.decrementIncomingFiles();
@@ -97,7 +126,7 @@ public class FileTransfer {
         isCancelled = true;
     }
 
-    public boolean teleported() {
+    private boolean teleported() {
         if (from instanceof TeleportingSatellite && to instanceof TeleportingSatellite) {
             return ((TeleportingSatellite) from).hasTeleported() || ((TeleportingSatellite) to).hasTeleported();
         } else if (from instanceof TeleportingSatellite) {
@@ -108,29 +137,4 @@ public class FileTransfer {
             return false;
         }
     }
-
-    public boolean paused() {
-        return toFiles.isTransient(fileName);
-    }
-
-    public Entity getFrom() {
-        return from;
-    }
-
-    public Entity getTo() {
-        return to;
-    }
-
-    public boolean isComplete() {
-        return isComplete;
-    }
-
-    public boolean isCancelled() {
-        return isCancelled;
-    }
-
-    public int getBytesRemaining() {
-        return size - transferredBytes;
-    }
-
 }

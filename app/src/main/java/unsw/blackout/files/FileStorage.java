@@ -50,26 +50,28 @@ public class FileStorage {
     }
 
     public int getAvailableStorage() {
-        // get the total storage used by all non-transient files
-        int storageUsed = files.values().stream().filter(file -> !file.isTransient()).mapToInt(file -> file.getSize())
-                .sum();
+        int storageUsed = files.values().stream().filter(file -> !file.isTransient()).mapToInt(File::getSize).sum();
         return storageCapacity - storageUsed;
     }
 
-    // determine which files to keep when storage is full
-    public void manageTransientFiles() {
-        int availableStorage = getAvailableStorage();
-        List<File> transientFiles = listTransientFiles();
-        // Keep only the selected files
-        List<File> filesToKeep = KnapsackSolver.solveKnapsack(transientFiles, availableStorage);
-        // Remove all transient files that are not in the filesToKeep list
-        transientFiles.stream().filter(file -> !filesToKeep.contains(file))
-                .forEach(file -> removeFile(file.getFileName()));
+    public boolean maxStorageReached(int size) {
+        if (listTransientFiles().size() > 0) {
+            optimiseTransientStorage(size);
+        }
+        int storageUsed = files.values().stream().mapToInt(File::getSize).sum();
+        return storageUsed + size > storageCapacity;
     }
 
-    public boolean maxStorageReached(int size) {
-        int storageUsed = files.values().stream().mapToInt(file -> file.getSize()).sum();
-        return storageUsed + size > storageCapacity;
+    private List<File> listTransientFiles() {
+        return files.values().stream().filter(file -> file.isTransient()).toList();
+    }
+
+    private void optimiseTransientStorage(int size) {
+        int availableStorage = getAvailableStorage() - size;
+        List<File> transientFiles = listTransientFiles();
+        List<File> filesToKeep = KnapsackSolver.solveKnapsack(transientFiles, availableStorage);
+        transientFiles.stream().filter(file -> !filesToKeep.contains(file))
+                .forEach(file -> removeFile(file.getFileName()));
     }
 
     public boolean maxFilesReached() {
@@ -94,10 +96,6 @@ public class FileStorage {
 
     public boolean isTransient(String filename) {
         return files.get(filename).isTransient();
-    }
-
-    public List<File> listTransientFiles() {
-        return files.values().stream().filter(file -> file.isTransient()).toList();
     }
 
     public void removeRemainingTBytes(String filename, int progress) {

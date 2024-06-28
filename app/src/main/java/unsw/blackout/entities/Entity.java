@@ -101,12 +101,4 @@ public abstract class Entity {
         toFiles.incrementIncomingFiles();
     }
 
-    public boolean maxFilesReached() {
-        return files.maxFilesReached();
-    }
-
-    public boolean maxStorageReached(int size) {
-        return files.maxStorageReached(size);
-    }
-
 }

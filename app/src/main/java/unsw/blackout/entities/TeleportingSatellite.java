@@ -1,6 +1,6 @@
 package unsw.blackout.entities;
 
-import unsw.blackout.Orbit;
+import unsw.blackout.algorithms.Orbit;
 import unsw.blackout.files.FileStorage;
 import unsw.utils.Angle;
 import static unsw.utils.MathsHelper.ANTI_CLOCKWISE;

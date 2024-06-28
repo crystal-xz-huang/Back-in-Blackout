@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Task3Tests",
+            "request": "launch",
+            "mainClass": "blackout.Task3Tests",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"

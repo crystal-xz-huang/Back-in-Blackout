@@ -7,7 +7,7 @@ import unsw.response.models.EntityInfoResponse;
 import unsw.utils.Angle;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SatelliteMovementTests {
+public class Task2MovementTests {
     @Test
     public void testStandardMovement() {
         final double height = 70011;

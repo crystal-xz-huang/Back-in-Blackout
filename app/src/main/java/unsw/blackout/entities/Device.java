@@ -2,11 +2,11 @@ package unsw.blackout.entities;
 
 import unsw.blackout.files.FileStorage;
 import unsw.utils.Angle;
-import unsw.utils.MathsHelper;
+import static unsw.utils.MathsHelper.RADIUS_OF_JUPITER;
 
 public abstract class Device extends Entity {
     public Device(String deviceId, String type, Angle position, FileStorage files) {
-        super(deviceId, type, position, MathsHelper.RADIUS_OF_JUPITER, files);
+        super(deviceId, type, position, RADIUS_OF_JUPITER, files);
     }
 
     @Override

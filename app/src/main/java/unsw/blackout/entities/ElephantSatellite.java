@@ -1,9 +1,8 @@
 package unsw.blackout.entities;
 
-import unsw.blackout.Orbit;
+import unsw.blackout.algorithms.Orbit;
 import unsw.blackout.files.FileStorage;
 import unsw.utils.Angle;
-
 import static unsw.utils.MathsHelper.CLOCKWISE;
 
 public class ElephantSatellite extends Satellite {
@@ -13,8 +12,8 @@ public class ElephantSatellite extends Satellite {
     private final int receiveBandwidth = 20;
     private final int direction = CLOCKWISE;
 
-    public ElephantSatellite(String id, String type, double height) {
-        super(id, type, null, height, new FileStorage(90));
+    public ElephantSatellite(String id, String type, Angle position, double height) {
+        super(id, type, position, height, new FileStorage(90));
     }
 
     @Override
@@ -53,10 +52,4 @@ public class ElephantSatellite extends Satellite {
         return dest instanceof DesktopDevice || dest instanceof LaptopDevice
                 || (dest instanceof Satellite && !(dest instanceof TeleportingSatellite));
     }
-
-    @Override
-    public boolean maxFilesReached() {
-        // transient files (that aren't currently​ transferring) to make room
-    }
-
 }
