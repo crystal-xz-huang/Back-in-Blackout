@@ -47,6 +47,9 @@ public class BlackoutController {
         case "RelaySatellite":
             system.addEntity(new RelaySatellite(satelliteId, type, position, height));
             break;
+        case "ElephantSatellite":
+            system.addEntity(new ElephantSatellite(satelliteId, type, position, height));
+            break;
         default:
             break;
         }
@@ -71,8 +74,7 @@ public class BlackoutController {
     }
 
     public EntityInfoResponse getInfo(String id) {
-        Entity entity = system.getEntity(id);
-        return entity.getInfo();
+        return system.getEntityInfo(id);
     }
 
     public void simulate() {

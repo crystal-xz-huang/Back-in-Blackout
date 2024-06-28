@@ -2,50 +2,49 @@ package unsw.blackout;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
+import unsw.response.models.EntityInfoResponse;
 import unsw.blackout.files.*;
 import unsw.blackout.entities.*;
+import static unsw.blackout.algorithms.ConnectivityHelper.inRangeAndVisible;
+import static unsw.blackout.algorithms.ConnectivityHelper.hasRelayPath;
 
-public class BlackoutSystem extends JupiterSystem {
-    private List<FileTransfer> transfers = new ArrayList<>();
+public class BlackoutSystem {
+    private List<FileTransfer> transfers;
+    private Map<String, Entity> entities;
 
-    @Override
+    public BlackoutSystem() {
+        this.entities = new HashMap<>();
+        this.transfers = new ArrayList<>();
+    }
+
+    public void addEntity(Entity entity) {
+        entities.put(entity.getId(), entity);
+    }
+
+    public void removeEntity(String entityId) {
+        entities.remove(entityId);
+    }
+
+    public Entity getEntity(String entityId) {
+        return entities.get(entityId);
+    }
+
+    public List<Entity> listEntities() {
+        return new ArrayList<>(entities.values());
+    }
+
+    public List<String> listEntityIds() {
+        return new ArrayList<>(entities.keySet());
+    }
+
     public boolean canCommunicate(Entity from, Entity to) {
         if (from.equals(to)) {
             return false;
         } else if (from.supports(to) && inRangeAndVisible(from, to)) {
             return true;
         } else {
-            return hasRelayPath(from, to);
+            return hasRelayPath(from, to, listRelaySatellites(from, to));
         }
-    }
-
-    private boolean hasRelayPath(Entity from, Entity to) {
-        List<Entity> relays = listRelaySatellites(from, to);
-        Queue<Entity> queue = new LinkedList<>();
-        Set<Entity> visited = new HashSet<>();
-
-        visited.add(from);
-        queue.add(from);
-
-        while (!queue.isEmpty()) {
-            Entity current = queue.poll();
-            if (current.equals(to)) {
-                return true;
-            }
-
-            for (Entity relay : relays) {
-                if (!visited.contains(relay) && inRangeAndVisible(current, relay)) {
-                    visited.add(relay);
-                    queue.add(relay);
-                }
-            }
-
-            if (inRangeAndVisible(current, to)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public void moveSatellites() {
@@ -54,15 +53,23 @@ public class BlackoutSystem extends JupiterSystem {
         }
     }
 
+    public EntityInfoResponse getEntityInfo(String id) {
+        Entity entity = getEntity(id);
+        return entity.getInfo();
+    }
+
     public void transferFiles() {
+        updateRemovedTransientFiles();
         for (FileTransfer transfer : transfers) {
             Entity from = transfer.getFrom();
             Entity to = transfer.getTo();
-            if (!canCommunicate(from, to) && !transfer.isTeleportingTransfer()) {
-                transfer.cancel();
+            if (!canCommunicate(from, to)) {
+                transfer.setOutOfRange();
+            } else if (canCommunicate(from, to) && transfer.isPaused()) {
+                transfer.resume();
             }
         }
-        transfers.forEach(t -> t.updateTransfer());
+        transfers.stream().filter(FileTransfer::isReady).forEach(FileTransfer::start);
         transfers.removeIf(t -> t.isComplete() || t.isCancelled());
     }
 
@@ -73,7 +80,7 @@ public class BlackoutSystem extends JupiterSystem {
     }
 
     public void sendFile(String fileName, String fromId, String toId) throws FileTransferException {
-        transferExceptionChecks(fileName, fromId, toId);
+        performTransferChecks(fileName, fromId, toId);
 
         Entity from = getEntity(fromId);
         Entity to = getEntity(toId);
@@ -82,10 +89,10 @@ public class BlackoutSystem extends JupiterSystem {
 
         FileTransfer transfer = new FileTransfer(fileName, fromFiles, toFiles, from, to);
         transfers.add(transfer);
-        transfer.sendFile();
+        from.sendFileTo(fileName, toFiles);
     }
 
-    private void transferExceptionChecks(String fileName, String fromId, String toId) throws FileTransferException {
+    private void performTransferChecks(String fileName, String fromId, String toId) throws FileTransferException {
         Entity from = getEntity(fromId);
         Entity to = getEntity(toId);
         FileStorage fromFiles = from.getFiles();
@@ -120,4 +127,8 @@ public class BlackoutSystem extends JupiterSystem {
                 .collect(Collectors.toList());
     }
 
+    private void updateRemovedTransientFiles() {
+        transfers.stream().filter(FileTransfer::isDeleted).forEach(FileTransfer::updateRemovedTransientFiles);
+        transfers.removeIf(FileTransfer::isDeleted);
+    }
 }

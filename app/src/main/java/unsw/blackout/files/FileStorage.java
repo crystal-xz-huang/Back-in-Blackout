@@ -1,6 +1,7 @@
 package unsw.blackout.files;
 
 import java.util.*;
+import unsw.blackout.algorithms.KnapsackSolver;
 
 public class FileStorage {
     private int storageCapacity;
@@ -28,7 +29,7 @@ public class FileStorage {
         return files.get(filename);
     }
 
-    public List<File> getFiles() {
+    public List<File> listFiles() {
         return new ArrayList<>(files.values());
     }
 
@@ -48,9 +49,29 @@ public class FileStorage {
         return files.get(filename).getContent();
     }
 
+    public int getAvailableStorage() {
+        int storageUsed = files.values().stream().filter(file -> !file.isTransient()).mapToInt(File::getSize).sum();
+        return storageCapacity - storageUsed;
+    }
+
     public boolean maxStorageReached(int size) {
-        int storageUsed = files.values().stream().mapToInt(file -> file.getSize()).sum();
+        if (listTransientFiles().size() > 0) {
+            optimiseTransientStorage(size);
+        }
+        int storageUsed = files.values().stream().mapToInt(File::getSize).sum();
         return storageUsed + size > storageCapacity;
+    }
+
+    private List<File> listTransientFiles() {
+        return files.values().stream().filter(file -> file.isTransient()).toList();
+    }
+
+    private void optimiseTransientStorage(int size) {
+        int availableStorage = getAvailableStorage() - size;
+        List<File> transientFiles = listTransientFiles();
+        List<File> filesToKeep = KnapsackSolver.solveKnapsack(transientFiles, availableStorage);
+        transientFiles.stream().filter(file -> !filesToKeep.contains(file))
+                .forEach(file -> removeFile(file.getFileName()));
     }
 
     public boolean maxFilesReached() {
@@ -67,6 +88,14 @@ public class FileStorage {
 
     public void setComplete(String filename) {
         files.get(filename).setComplete();
+    }
+
+    public void setTransient(String filename, boolean isTransient) {
+        files.get(filename).setTransient(isTransient);
+    }
+
+    public boolean isTransient(String filename) {
+        return files.get(filename).isTransient();
     }
 
     public void removeRemainingTBytes(String filename, int progress) {
@@ -96,4 +125,5 @@ public class FileStorage {
     public void decrementOutgoingFiles() {
         outgoingFiles--;
     }
+
 }

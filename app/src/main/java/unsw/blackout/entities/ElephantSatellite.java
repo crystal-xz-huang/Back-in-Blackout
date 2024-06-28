@@ -5,15 +5,15 @@ import unsw.blackout.files.FileStorage;
 import unsw.utils.Angle;
 import static unsw.utils.MathsHelper.CLOCKWISE;
 
-public class StandardSatellite extends Satellite {
+public class ElephantSatellite extends Satellite {
+    private final double range = 400000;
     private final double velocity = 2500;
-    private final double range = 150000;
-    private final int sendBandwidth = 1;
-    private final int receiveBandwidth = 1;
+    private final int sendBandwidth = 20;
+    private final int receiveBandwidth = 20;
     private final int direction = CLOCKWISE;
 
-    public StandardSatellite(String id, String type, Angle position, double height) {
-        super(id, type, position, height, new FileStorage(80, 3));
+    public ElephantSatellite(String id, String type, Angle position, double height) {
+        super(id, type, position, height, new FileStorage(90));
     }
 
     @Override
@@ -47,4 +47,9 @@ public class StandardSatellite extends Satellite {
         setPosition(newPosition);
     }
 
+    @Override
+    public boolean supports(Entity dest) {
+        return dest instanceof DesktopDevice || dest instanceof LaptopDevice
+                || (dest instanceof Satellite && !(dest instanceof TeleportingSatellite));
+    }
 }
