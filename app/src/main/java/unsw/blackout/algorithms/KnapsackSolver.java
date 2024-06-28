@@ -4,8 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import unsw.blackout.files.File;
 
-public class KnapsackSolver {
-    // Returns the files that can be included to maximize the total transferred bytes
+public final class KnapsackSolver {
+    /**
+     * Returns a list of files that can be transferred given a capacity constraint
+     * @param files
+     * @param capacity
+     * @return
+     */
     public static List<File> solveKnapsack(List<File> files, int capacity) {
         int n = files.size();
         int[][] dp = new int[n + 1][capacity + 1];
@@ -24,7 +29,6 @@ public class KnapsackSolver {
             }
         }
 
-        // Backtrack to find the files to keep
         List<File> filesToKeep = new ArrayList<>();
         int w = capacity;
         for (int i = n; i > 0 && w > 0; i--) {
