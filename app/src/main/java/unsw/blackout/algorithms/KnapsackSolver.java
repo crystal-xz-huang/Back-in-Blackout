@@ -6,7 +6,8 @@ import unsw.blackout.files.File;
 
 public final class KnapsackSolver {
     /**
-     * Returns a list of files that can be transferred given a capacity constraint
+     * Returns a list of files that can be kept to maximize the total transferred bytes
+     * in the given storage capacity.
      * @param files
      * @param capacity
      * @return

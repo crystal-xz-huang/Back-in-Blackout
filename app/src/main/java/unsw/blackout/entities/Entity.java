@@ -100,5 +100,4 @@ public abstract class Entity {
         toFiles.addFile(fileName, file.getContent(), false);
         toFiles.incrementIncomingFiles();
     }
-
 }
