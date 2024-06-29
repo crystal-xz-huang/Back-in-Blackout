@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static blackout.TestHelpers.assertListAreEqualIgnoringOrder;
 
-public class Task3Tests {
+public class MyTask3Tests {
     @Test
     public void testResumeTransientTransfer() {
         final double velocity = 2500;

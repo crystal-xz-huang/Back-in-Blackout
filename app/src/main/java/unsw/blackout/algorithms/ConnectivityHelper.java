@@ -6,7 +6,7 @@ import unsw.utils.Angle;
 import static unsw.utils.MathsHelper.getDistance;
 import static unsw.utils.MathsHelper.isVisible;
 
-public class ConnectivityHelper {
+public final class ConnectivityHelper {
     public static boolean hasRelayPath(Entity from, Entity to, List<Entity> relays) {
         Queue<Entity> queue = new LinkedList<>();
         Set<Entity> visited = new HashSet<>();

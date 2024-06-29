@@ -11,6 +11,7 @@ public class File {
     public File(String fileName, String content, boolean isComplete) {
         this.fileName = fileName;
         this.content = content;
+        this.isTransient = false;
         if (isComplete) {
             this.data = content;
         } else {
