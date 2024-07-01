@@ -156,7 +156,6 @@ I then delegated the responsibility of managing transient file transfers which i
 
 The noticeable flaw in my design was that my initial simplification for calculating the available sending and receiving bandwidth through the addition of counters for the number of incoming and outgoing transfers, was not very effective for the addition of transient files. Every time a file is marked as transient, I needed to make sure I decreased the number of incoming transfers in the destination entity and decreased the number of outgoing transfers in the source entity. I also needed to reverse this when a transient file resumes transfer. Furthermore, I needed to update these counters when a transient file is deleted. However, since I delegated the removal of transient files to the `FileStorage` class, this meant I needed to manually check if a transient file is deleted in the `FileTransfer` class and then update the counters. Then I needed to remove this transfer outside in `BlackoutSystem`. Overall, I'm not confident that my implementation of transient files in file transfers is robust and correct since it involved making changes across three classes.
 
-
 # Reflection
 Overall, I think I did reasonably well on this assignment. I was happy with how I grouped the devices and satellites together into one Entity class, and how it simplified the management of both satellites and devices in the blackout system.
 
